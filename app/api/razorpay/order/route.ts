@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { createClient } from "@/lib/supabase/server";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID ?? "",
-  key_secret: process.env.RAZORPAY_KEY_SECRET ?? "",
-});
+export const dynamic = "force-dynamic";
+
+function getRazorpay() {
+  return new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID || "dummy_key_id",
+    key_secret: process.env.RAZORPAY_KEY_SECRET || "dummy_key_secret",
+  });
+}
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -34,6 +38,7 @@ export async function POST(req: NextRequest) {
   const gstAmount = Math.round(baseAmount * 0.18);
   const totalAmountWithGst = baseAmount + gstAmount;
 
+  const razorpay = getRazorpay();
   const order = await razorpay.orders.create({
     amount: totalAmountWithGst,
     currency: "INR",
