@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #6D28D9;
+  --color-brand-50: #F5F3FF;
+  --color-brand-100: #EDE9FE;
+  --color-brand-200: #DDD6FE;
+  --color-brand-600: #7C3AED;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ── Smooth scroll ─────────────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+/* ── Float (pass card) ─────────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+.animate-float { animation: float 4s ease-in-out infinite; }
+
+@keyframes float-delayed {
+  0%, 100% { transform: translateY(0px) rotate(-2deg); }
+  50%       { transform: translateY(-6px) rotate(-2deg); }
+}
+.animate-float-delayed { animation: float-delayed 4s ease-in-out 0.8s infinite; }
+
+/* ── Hero entrance (CSS-only, no observer needed — always above fold) ──── */
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes heroBadgePop {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes heroSlideRight {
+  from { opacity: 0; transform: translateX(36px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.hero-badge  { animation: heroBadgePop   0.5s cubic-bezier(0.16,1,0.3,1) 0.05s both; }
+.hero-line-1 { animation: heroFadeUp     0.65s cubic-bezier(0.16,1,0.3,1) 0.18s both; }
+.hero-line-2 { animation: heroFadeUp     0.65s cubic-bezier(0.16,1,0.3,1) 0.30s both; }
+.hero-line-3 { animation: heroFadeUp     0.65s cubic-bezier(0.16,1,0.3,1) 0.42s both; }
+.hero-sub    { animation: heroFadeUp     0.6s  cubic-bezier(0.16,1,0.3,1) 0.52s both; }
+.hero-ctas   { animation: heroFadeUp     0.6s  cubic-bezier(0.16,1,0.3,1) 0.62s both; }
+.hero-meta   { animation: heroFadeUp     0.5s  cubic-bezier(0.16,1,0.3,1) 0.72s both; }
+.hero-card   { animation: heroSlideRight 0.85s cubic-bezier(0.16,1,0.3,1) 0.25s both; }
+
+/* ── QR scanner line sweep ─────────────────────────────────────────────── */
+@keyframes scanLine {
+  0%   { top: 10%; }
+  50%  { top: 90%; }
+  100% { top: 10%; }
+}
+
+/* ── Apply page entrance ───────────────────────────────────────────────── */
+.apply-in-1 { animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.05s both; }
+.apply-in-2 { animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.18s both; }
+.apply-in-3 { animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.28s both; }
+.apply-in-4 { animation: heroFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.38s both; }
+
+@keyframes passScaleIn {
+  from { opacity: 0; transform: scale(0.90) translateY(24px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+.pass-scale-in { animation: passScaleIn 0.7s cubic-bezier(0.16,1,0.3,1) 0.05s both; }
+.pass-in-2     { animation: heroFadeUp  0.5s cubic-bezier(0.16,1,0.3,1) 0.40s both; }
+.pass-in-3     { animation: heroFadeUp  0.5s cubic-bezier(0.16,1,0.3,1) 0.55s both; }
+
+/* ── Connector line draw (how-it-works) ────────────────────────────────── */
+@keyframes drawLine {
+  from { transform: scaleX(0); transform-origin: left; }
+  to   { transform: scaleX(1); transform-origin: left; }
+}
+.connector-line {
+  animation: drawLine 0.6s cubic-bezier(0.16,1,0.3,1) var(--delay, 0ms) both;
+}
+
+/* ── Skeleton shimmer ──────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #e8e8ec 25%, #f4f4f7 50%, #e8e8ec 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+.skeleton-dark {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.10) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* ── Page entrance ─────────────────────────────────────────────────────── */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-in { animation: pageIn 0.38s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* ── Pro upgrade celebration ───────────────────────────────────────────── */
+@keyframes particle-fly {
+  0%   { transform: translate(0, 0) scale(1.2); opacity: 1; }
+  80%  { opacity: 0.6; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+
+@keyframes ring-expand {
+  0%   { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(4);   opacity: 0; }
+}
+
+@keyframes pro-card-in {
+  0%   { opacity: 0; transform: scale(0.6) translateY(24px); }
+  65%  { opacity: 1; transform: scale(1.04) translateY(-4px); }
+  82%  { transform: scale(0.98) translateY(2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes pro-card-out {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.88) translateY(-16px); }
+}
+
+@keyframes star-spin {
+  0%   { transform: rotate(0deg) scale(1); }
+  50%  { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* ── Upgrade button pulse ──────────────────────────────────────────────── */
+@keyframes upgrade-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(109, 40, 217, 0.45); }
+  50%       { box-shadow: 0 0 0 10px rgba(109, 40, 217, 0); }
+}
+.upgrade-pulse { animation: upgrade-pulse 2.2s ease-in-out infinite; }
+
+/* ── Content fade-in (for client-side data load) ───────────────────────── */
+@keyframes contentIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.content-in { animation: contentIn 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+

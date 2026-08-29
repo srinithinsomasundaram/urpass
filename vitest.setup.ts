@@ -1,0 +1,6 @@
+import "@testing-library/jest-dom";
+
+process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://sjzuheujgwkpanykkdin.supabase.co";
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqenVoZXVqZ3drcGFueWtrZGluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5OTQxNzcsImV4cCI6MjEwMzU3MDE3N30.sJ1ad0CpUKFOUli-CU_tfQkYChKvB_j_4k4ddEunj3k";
+process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqenVoZXVqZ3drcGFueWtrZGluIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4Nzk5NDE3NywiZXhwIjoyMTAzNTcwMTc3fQ.VPsxGFLAi4SDALVcDYxBqPy82NA5EYnOthEyFhvbZuU";
+
