@@ -3,8 +3,6 @@ import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const CATEGORY_LABELS: Record<string, string> = {
   bug: "🐛 Bug report",
   feature: "💡 Feature request",
@@ -33,6 +31,13 @@ export async function POST(req: NextRequest) {
   const senderName = name?.trim() || "Anonymous";
   const replyToHeader = email ? [email] : undefined;
 
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey.startsWith("re_your")) {
+    console.warn("[email] RESEND_API_KEY not configured — feedback email skipped");
+    return NextResponse.json({ ok: true });
+  }
+
+  const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
     from: "URPASS Feedback <noreply@urpass.space>",
     to: ["srinithinoffl@gmail.com"],

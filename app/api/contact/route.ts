@@ -3,8 +3,6 @@ import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const { name, email, message } = body ?? {};
@@ -19,6 +17,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Message must be between 10 and 5000 characters" }, { status: 400 });
   }
 
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey.startsWith("re_your")) {
+    console.warn("[email] RESEND_API_KEY not configured — contact email skipped");
+    return NextResponse.json({ ok: true });
+  }
+
+  const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
     from: "URPASS Contact <noreply@urpass.space>",
     to: ["srinithinoffl@gmail.com"],
