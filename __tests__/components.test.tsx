@@ -105,19 +105,19 @@ describe("AttendeeTable", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("renders all attendees by default", () => {
-    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" />);
+    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" attendeeLimit={100} />);
     expect(screen.getByText("Alice Kumar")).toBeInTheDocument();
     expect(screen.getByText("Bob Singh")).toBeInTheDocument();
     expect(screen.getByText("Carol Iyer")).toBeInTheDocument();
   });
 
   it("shows empty state when no attendees", () => {
-    render(<AttendeeTable attendees={[]} eventId="evt-1" />);
+    render(<AttendeeTable attendees={[]} eventId="evt-1" attendeeLimit={100} />);
     expect(screen.getByText(/no attendees yet/i)).toBeInTheDocument();
   });
 
   it("filters to pending tab correctly", async () => {
-    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" />);
+    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" attendeeLimit={100} />);
     const pendingTab = screen.getByRole("button", { name: /pending/i });
     await userEvent.click(pendingTab);
     expect(screen.getByText("Alice Kumar")).toBeInTheDocument();
@@ -126,7 +126,7 @@ describe("AttendeeTable", () => {
   });
 
   it("filters to approved tab correctly", async () => {
-    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" />);
+    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" attendeeLimit={100} />);
     const approvedTab = screen.getByRole("button", { name: /approved/i });
     await userEvent.click(approvedTab);
     expect(screen.getByText("Bob Singh")).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe("AttendeeTable", () => {
   });
 
   it("filters by search query (name)", async () => {
-    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" />);
+    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" attendeeLimit={100} />);
     const searchInput = screen.getByPlaceholderText(/search name or email/i);
     await userEvent.type(searchInput, "alice");
     expect(screen.getByText("Alice Kumar")).toBeInTheDocument();
@@ -142,7 +142,7 @@ describe("AttendeeTable", () => {
   });
 
   it("filters by search query (email)", async () => {
-    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" />);
+    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" attendeeLimit={100} />);
     const searchInput = screen.getByPlaceholderText(/search name or email/i);
     await userEvent.type(searchInput, "carol@");
     expect(screen.getByText("Carol Iyer")).toBeInTheDocument();
@@ -150,14 +150,14 @@ describe("AttendeeTable", () => {
   });
 
   it("shows Approve and Reject buttons for pending attendees", () => {
-    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" />);
+    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" attendeeLimit={100} />);
     // Use exact name "Approve" to avoid matching the "approved 1" tab button
     expect(screen.getByRole("button", { name: "Approve" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reject" })).toBeInTheDocument();
   });
 
   it("shows Pass and Revoke buttons for approved attendees", async () => {
-    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" />);
+    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" attendeeLimit={100} />);
     // Switch to approved tab
     await userEvent.click(screen.getByRole("button", { name: /approved/i }));
     expect(screen.getByRole("button", { name: /pass/i })).toBeInTheDocument();
@@ -166,7 +166,7 @@ describe("AttendeeTable", () => {
 
   it("calls approveAttendee with correct ids", async () => {
     const { approveAttendee } = await import("@/app/actions/attendees");
-    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" />);
+    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" attendeeLimit={100} />);
     // "Approve" is the exact action button label; "approved 1" is the tab
     const approveBtn = screen.getByRole("button", { name: "Approve" });
     await userEvent.click(approveBtn);
@@ -174,24 +174,24 @@ describe("AttendeeTable", () => {
   });
 
   it("shows 'Add attendee' button", () => {
-    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" />);
+    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" attendeeLimit={100} />);
     expect(screen.getByRole("button", { name: /add attendee/i })).toBeInTheDocument();
   });
 
   it("opens AddAttendeeModal when 'Add attendee' is clicked", async () => {
-    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" />);
+    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" attendeeLimit={100} />);
     await userEvent.click(screen.getByRole("button", { name: /add attendee/i }));
     expect(screen.getByText(/full name/i)).toBeInTheDocument();
   });
 
   it("shows tab counts correctly", () => {
-    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" />);
+    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" attendeeLimit={100} />);
     // All tab shows 3
     expect(screen.getByRole("button", { name: /all.*3/i })).toBeInTheDocument();
   });
 
   it("shows no-match empty state when search has no results", async () => {
-    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" />);
+    render(<AttendeeTable attendees={sampleAttendees} eventId="evt-1" attendeeLimit={100} />);
     const searchInput = screen.getByPlaceholderText(/search name or email/i);
     await userEvent.type(searchInput, "zzznomatch");
     expect(screen.getByText(/no attendees match this filter/i)).toBeInTheDocument();

@@ -46,6 +46,12 @@ export default function Navbar() {
           >
             Pricing
           </Link>
+          <Link
+            href="/contact"
+            className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors"
+          >
+            Contact
+          </Link>
         </nav>
 
         {/* Desktop CTA */}
@@ -90,6 +96,13 @@ export default function Navbar() {
             className="text-sm text-neutral-600 py-1"
           >
             Pricing
+          </Link>
+          <Link
+            href="/contact"
+            onClick={() => setOpen(false)}
+            className="text-sm text-neutral-600 py-1"
+          >
+            Contact
           </Link>
           <div className="pt-2 border-t border-neutral-100 flex flex-col gap-2">
             <Link

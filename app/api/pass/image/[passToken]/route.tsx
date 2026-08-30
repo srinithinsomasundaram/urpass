@@ -46,6 +46,50 @@ export async function GET(
 
   if (!attendee || !event) return new Response("Not found", { status: 404 });
 
+  // Fetch organizer plan + branding
+  const { data: eventOrg } = await supabase
+    .from("events")
+    .select("organizer_id")
+    .eq("id", pass.event_id)
+    .single();
+
+  const organizerId = eventOrg?.organizer_id ?? null;
+  let showBranding = true;
+  let brandColor = "#6D28D9";
+  let orgName: string | null = null;
+  if (organizerId) {
+    const [{ data: sub }, { data: orgProfile }] = await Promise.all([
+      supabase
+        .from("subscriptions")
+        .select("plan:plans(slug)")
+        .eq("user_id", organizerId)
+        .eq("status", "active")
+        .single(),
+      supabase
+        .from("profiles")
+        .select("org_name, brand_color")
+        .eq("user_id", organizerId)
+        .single(),
+    ]);
+
+    const planSlug = (sub?.plan as unknown as { slug: string } | null)?.slug ?? "free";
+    showBranding = planSlug === "free";
+    const isPro = planSlug === "pro";
+    if (orgProfile?.brand_color && isPro) brandColor = orgProfile.brand_color;
+    if (orgProfile?.org_name && isPro) orgName = orgProfile.org_name;
+  }
+
+  function darkenHex(hex: string, amount = 40): string {
+    const clean = hex.replace("#", "");
+    if (clean.length !== 6) return hex;
+    const r = Math.max(0, parseInt(clean.slice(0, 2), 16) - amount);
+    const g = Math.max(0, parseInt(clean.slice(2, 4), 16) - amount);
+    const b = Math.max(0, parseInt(clean.slice(4, 6), 16) - amount);
+    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  }
+  const brandColorDark = darkenHex(brandColor);
+  const headerLabel = orgName ? `${orgName} · EVENT PASS` : showBranding ? "URPASS · EVENT PASS" : "EVENT PASS";
+
   // QR code as base64 PNG — works in ImageResponse <img src>
   const qrDataUrl = await QRCode.toDataURL(passToken, {
     width: 160,
@@ -87,7 +131,7 @@ export async function GET(
       <div
         style={{
           width: 400,
-          height: 640,
+          height: showBranding ? 640 : 608,
           display: "flex",
           flexDirection: "column",
           backgroundColor: "#ffffff",
@@ -96,13 +140,13 @@ export async function GET(
           fontFamily: "'Inter', system-ui, sans-serif",
         }}
       >
-        {/* ── Purple header ─────────────────────────────────────── */}
+        {/* ── Brand header ──────────────────────────────────────── */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             padding: "28px 28px 32px",
-            background: "linear-gradient(135deg, #6D28D9 0%, #4c1d95 100%)",
+            background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColorDark} 100%)`,
           }}
         >
           <span
@@ -110,12 +154,12 @@ export async function GET(
               fontSize: 9,
               fontWeight: 700,
               letterSpacing: 3,
-              color: "#c4b5fd",
+              color: "rgba(255,255,255,0.55)",
               textTransform: "uppercase",
               marginBottom: 14,
             }}
           >
-            URPASS · EVENT PASS
+            {headerLabel}
           </span>
 
           <div
@@ -268,30 +312,32 @@ export async function GET(
         </div>
 
         {/* ── Footer ────────────────────────────────────────────── */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            padding: "12px 28px",
-            borderTop: "1px solid #f3f4f6",
-          }}
-        >
-          <span
+        {showBranding && (
+          <div
             style={{
-              fontSize: 9,
-              color: "#d1d5db",
-              letterSpacing: 2.5,
-              textTransform: "uppercase",
+              display: "flex",
+              justifyContent: "center",
+              padding: "12px 28px",
+              borderTop: "1px solid #f3f4f6",
             }}
           >
-            Powered by URPASS
-          </span>
-        </div>
+            <span
+              style={{
+                fontSize: 9,
+                color: "#d1d5db",
+                letterSpacing: 2.5,
+                textTransform: "uppercase",
+              }}
+            >
+              Powered by URPASS
+            </span>
+          </div>
+        )}
       </div>
     ),
     {
       width: 400,
-      height: 640,
+      height: showBranding ? 640 : 608,
       headers: {
         "Content-Disposition": `attachment; filename="urpass-${shortCode}.png"`,
       },

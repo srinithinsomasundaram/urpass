@@ -6,6 +6,8 @@ export interface PlanLimits {
   canCSV: boolean;
   canExport: boolean;
   canRemoveBranding: boolean;
+  canUseAPI: boolean;
+  canCreatePaidEvents: boolean;
 }
 
 const FREE_LIMITS: PlanLimits = {
@@ -16,6 +18,8 @@ const FREE_LIMITS: PlanLimits = {
   canCSV: false,
   canExport: false,
   canRemoveBranding: false,
+  canUseAPI: false,
+  canCreatePaidEvents: false,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,7 +47,9 @@ export async function getUserPlan(supabase: any, userId: string): Promise<PlanLi
     maxAttendees: plan.max_attendees,
     unlimited: isUnlimited,
     canCSV: plan.slug !== "free",
-    canExport: plan.slug === "pro",
+    canExport: plan.slug === "pro" || plan.slug === "enterprise",
     canRemoveBranding: plan.slug !== "free",
+    canUseAPI: plan.slug === "pro" || plan.slug === "enterprise",
+    canCreatePaidEvents: plan.slug !== "free",
   };
 }

@@ -16,6 +16,9 @@ import {
   ChevronRight,
   Star,
   Globe,
+  Code2,
+  Webhook,
+  Lock,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -145,6 +148,8 @@ const SECTIONS = [
   { id: "attendees", label: "Attendees" },
   { id: "passes", label: "Passes & check-in" },
   { id: "plans", label: "Plans & billing" },
+  { id: "api", label: "API reference" },
+  { id: "webhooks", label: "Webhooks" },
   { id: "faq", label: "FAQ" },
 ];
 
@@ -647,6 +652,341 @@ export default function DocsPage() {
                   <li>Subscriptions renew monthly. Cancel anytime from your billing page.</li>
                   <li>On cancellation, access continues until the end of the billing period.</li>
                 </ul>
+              </div>
+            </section>
+
+            {/* ── API Reference ───────────────────────────────────── */}
+            <SectionAnchor id="api" />
+            <section className="mb-12">
+              <div className="flex items-center gap-2.5 mb-6">
+                <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                  <Code2 className="w-4 h-4 text-indigo-600" />
+                </div>
+                <h2 className="text-xl font-bold text-neutral-900">API reference</h2>
+                <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                  Pro
+                </span>
+              </div>
+
+              {/* Overview */}
+              <div className="bg-white border border-neutral-100 rounded-2xl p-6 mb-4">
+                <p className="text-sm text-neutral-500 leading-relaxed mb-4">
+                  The URPASS REST API lets you read your events and attendees from any external
+                  application. API access is available exclusively on the{" "}
+                  <strong className="text-neutral-800">Pro plan</strong>. Generate keys from{" "}
+                  <strong className="text-neutral-800">Dashboard → API Keys</strong>.
+                </p>
+                <div className="flex items-center gap-3 bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3">
+                  <p className="text-xs font-semibold text-neutral-500 shrink-0">Base URL</p>
+                  <code className="text-xs font-mono text-neutral-800 flex-1">
+                    https://urpass.space/api/v1
+                  </code>
+                </div>
+              </div>
+
+              {/* Auth */}
+              <div className="bg-white border border-neutral-100 rounded-2xl overflow-hidden mb-4">
+                <div className="flex items-center gap-2 px-6 py-4 border-b border-neutral-100">
+                  <Lock className="w-4 h-4 text-neutral-400" />
+                  <h3 className="text-sm font-semibold text-neutral-800">Authentication</h3>
+                </div>
+                <div className="px-6 py-5">
+                  <p className="text-sm text-neutral-500 mb-4">
+                    Pass your API key in the <code className="bg-neutral-100 px-1.5 py-0.5 rounded text-xs font-mono text-neutral-700">Authorization</code> header
+                    as a Bearer token on every request. Keys start with{" "}
+                    <code className="bg-neutral-100 px-1.5 py-0.5 rounded text-xs font-mono text-neutral-700">urp_live_</code>.
+                  </p>
+                  <div className="bg-neutral-950 rounded-xl p-4 font-mono text-xs text-green-400 overflow-x-auto">
+                    <span className="text-neutral-500">curl </span>
+                    <span className="text-blue-400">https://urpass.space/api/v1/events </span>
+                    <span className="text-neutral-500">\{"\n"}  </span>
+                    <span className="text-yellow-400">-H </span>
+                    <span className="text-green-400">&quot;Authorization: Bearer urp_live_...&quot;</span>
+                  </div>
+                  <div className="mt-4 flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                    <Shield className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    Never expose API keys in client-side code or public repositories.
+                  </div>
+                </div>
+              </div>
+
+              {/* Endpoints */}
+              <div className="bg-white border border-neutral-100 rounded-2xl overflow-hidden mb-4">
+                <div className="px-6 py-4 border-b border-neutral-100">
+                  <h3 className="text-sm font-semibold text-neutral-800">Endpoints</h3>
+                </div>
+
+                {/* GET /events */}
+                <div className="px-6 py-5 border-b border-neutral-50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-mono">GET</span>
+                    <code className="text-sm font-mono text-neutral-800">/events</code>
+                  </div>
+                  <p className="text-sm text-neutral-500 mb-3">List all events you own.</p>
+                  <p className="text-xs font-semibold text-neutral-600 mb-2">Query parameters</p>
+                  <div className="flex flex-col gap-1.5 mb-4">
+                    {[
+                      ["status", "string", "Filter by status: draft · active · completed · cancelled"],
+                      ["limit", "number", "Max results per page (default 50, max 100)"],
+                      ["offset", "number", "Pagination offset (default 0)"],
+                    ].map(([param, type, desc]) => (
+                      <div key={param as string} className="grid grid-cols-[120px_60px_1fr] gap-2 text-xs">
+                        <code className="font-mono text-brand">{param}</code>
+                        <span className="text-neutral-400 italic">{type}</span>
+                        <span className="text-neutral-500">{desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-neutral-950 rounded-xl p-4 font-mono text-xs overflow-x-auto">
+                    <pre className="text-neutral-300 whitespace-pre">{`{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "AI Workshop 2026",
+      "event_date": "2026-09-15",
+      "venue": "SRM Institute, Chennai",
+      "status": "active",
+      "is_paid_event": false,
+      "ticket_price": 0,
+      "attendee_limit": 200
+    }
+  ],
+  "meta": { "total": 4, "limit": 50, "offset": 0 }
+}`}</pre>
+                  </div>
+                </div>
+
+                {/* GET /events/:id */}
+                <div className="px-6 py-5 border-b border-neutral-50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-mono">GET</span>
+                    <code className="text-sm font-mono text-neutral-800">/events/:id</code>
+                  </div>
+                  <p className="text-sm text-neutral-500">Retrieve a single event by its UUID.</p>
+                </div>
+
+                {/* GET /events/:id/attendees */}
+                <div className="px-6 py-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-mono">GET</span>
+                    <code className="text-sm font-mono text-neutral-800">/events/:id/attendees</code>
+                  </div>
+                  <p className="text-sm text-neutral-500 mb-3">List attendees for an event.</p>
+                  <p className="text-xs font-semibold text-neutral-600 mb-2">Query parameters</p>
+                  <div className="flex flex-col gap-1.5 mb-4">
+                    {[
+                      ["application_status", "string", "pending · approved · rejected"],
+                      ["pass_status", "string", "not_generated · generated · checked_in"],
+                      ["limit", "number", "Max results (default 100, max 500)"],
+                      ["offset", "number", "Pagination offset"],
+                    ].map(([param, type, desc]) => (
+                      <div key={param as string} className="grid grid-cols-[140px_60px_1fr] gap-2 text-xs">
+                        <code className="font-mono text-brand">{param}</code>
+                        <span className="text-neutral-400 italic">{type}</span>
+                        <span className="text-neutral-500">{desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-neutral-950 rounded-xl p-4 font-mono text-xs overflow-x-auto">
+                    <pre className="text-neutral-300 whitespace-pre">{`{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "Arun Kumar",
+      "email": "arun@example.com",
+      "pass_type": "participant",
+      "application_status": "approved",
+      "pass_status": "checked_in"
+    }
+  ],
+  "meta": { "total": 87, "limit": 100, "offset": 0 }
+}`}</pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Error codes */}
+              <div className="bg-white border border-neutral-100 rounded-2xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-neutral-100">
+                  <h3 className="text-sm font-semibold text-neutral-800">Error responses</h3>
+                </div>
+                <div className="divide-y divide-neutral-50">
+                  {[
+                    ["401", "Unauthorized", "Missing or invalid API key"],
+                    ["403", "Forbidden", "Key is revoked or plan downgraded from Pro"],
+                    ["404", "Not Found", "Resource does not exist or belongs to another user"],
+                    ["429", "Too Many Requests", "Rate limit exceeded — back off and retry"],
+                    ["500", "Server Error", "Internal error — contact support if persistent"],
+                  ].map(([code, name, desc]) => (
+                    <div key={code as string} className="flex items-start gap-4 px-6 py-3.5">
+                      <code className={`text-xs font-mono font-bold shrink-0 mt-0.5 ${
+                        code === "401" || code === "403" ? "text-red-600" :
+                        code === "404" ? "text-amber-600" :
+                        code === "429" ? "text-orange-600" : "text-neutral-500"
+                      }`}>{code}</code>
+                      <p className="text-xs font-semibold text-neutral-700 w-32 shrink-0 mt-0.5">{name}</p>
+                      <p className="text-xs text-neutral-500">{desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* ── Webhooks ─────────────────────────────────────────── */}
+            <SectionAnchor id="webhooks" />
+            <section className="mb-12">
+              <div className="flex items-center gap-2.5 mb-6">
+                <div className="w-8 h-8 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center shrink-0">
+                  <Webhook className="w-4 h-4 text-violet-600" />
+                </div>
+                <h2 className="text-xl font-bold text-neutral-900">Webhooks</h2>
+              </div>
+
+              <div className="bg-white border border-neutral-100 rounded-2xl p-6 mb-4">
+                <p className="text-sm text-neutral-500 leading-relaxed">
+                  URPASS sends webhook events to your server when important actions occur — such as
+                  a subscription payment or a paid event ticket purchase. Configure your webhook
+                  endpoint in the{" "}
+                  <strong className="text-neutral-800">Razorpay Dashboard → Webhooks</strong> and
+                  point it to:
+                </p>
+                <div className="mt-4 flex items-center gap-3 bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3">
+                  <code className="text-xs font-mono text-neutral-800 flex-1 break-all">
+                    https://urpass.space/api/webhook/razorpay
+                  </code>
+                </div>
+              </div>
+
+              {/* Signature verification */}
+              <div className="bg-white border border-neutral-100 rounded-2xl overflow-hidden mb-4">
+                <div className="flex items-center gap-2 px-6 py-4 border-b border-neutral-100">
+                  <Shield className="w-4 h-4 text-neutral-400" />
+                  <h3 className="text-sm font-semibold text-neutral-800">Signature verification</h3>
+                </div>
+                <div className="px-6 py-5">
+                  <p className="text-sm text-neutral-500 mb-4">
+                    Every webhook request includes an{" "}
+                    <code className="bg-neutral-100 px-1.5 py-0.5 rounded text-xs font-mono">x-razorpay-signature</code>{" "}
+                    header. URPASS verifies this using HMAC-SHA256 with your{" "}
+                    <code className="bg-neutral-100 px-1.5 py-0.5 rounded text-xs font-mono">RAZORPAY_WEBHOOK_SECRET</code>.
+                    Requests with an invalid signature are rejected with <code className="bg-neutral-100 px-1.5 py-0.5 rounded text-xs font-mono">400</code>.
+                  </p>
+                  <div className="bg-neutral-950 rounded-xl p-4 font-mono text-xs overflow-x-auto">
+                    <pre className="text-neutral-300 whitespace-pre">{`import crypto from "crypto";
+
+const expected = crypto
+  .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
+  .update(rawBody)
+  .digest("hex");
+
+const valid = crypto.timingSafeEqual(
+  Buffer.from(expected, "hex"),
+  Buffer.from(signature, "hex")
+);`}</pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Event types */}
+              <div className="bg-white border border-neutral-100 rounded-2xl overflow-hidden mb-4">
+                <div className="px-6 py-4 border-b border-neutral-100">
+                  <h3 className="text-sm font-semibold text-neutral-800">Event types</h3>
+                </div>
+
+                {/* payment.captured — subscription */}
+                <div className="px-6 py-5 border-b border-neutral-50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-mono font-semibold text-neutral-900">payment.captured</span>
+                    <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded-full font-semibold">Subscription</span>
+                  </div>
+                  <p className="text-sm text-neutral-500 mb-4">
+                    Fired when a user successfully pays for a Starter or Pro subscription.
+                    URPASS activates the subscription automatically.
+                  </p>
+                  <div className="bg-neutral-950 rounded-xl p-4 font-mono text-xs overflow-x-auto">
+                    <pre className="text-neutral-300 whitespace-pre">{`{
+  "event": "payment.captured",
+  "payload": {
+    "payment": {
+      "entity": {
+        "id": "pay_XXXXXXXX",
+        "amount": 35282,
+        "currency": "INR",
+        "notes": {
+          "user_id": "uuid",
+          "plan_id": "uuid",
+          "plan_slug": "pro"
+        }
+      }
+    }
+  }
+}`}</pre>
+                  </div>
+                </div>
+
+                {/* payment.captured — ticket */}
+                <div className="px-6 py-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-mono font-semibold text-neutral-900">payment.captured</span>
+                    <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-100 px-1.5 py-0.5 rounded-full font-semibold">Ticket</span>
+                  </div>
+                  <p className="text-sm text-neutral-500 mb-4">
+                    Fired when an attendee pays for a ticket on a paid event.
+                    URPASS marks the <code className="bg-neutral-100 px-1.5 py-0.5 rounded font-mono text-xs">ticket_orders</code> record
+                    as <code className="bg-neutral-100 px-1.5 py-0.5 rounded font-mono text-xs">paid</code> and the attendee application is recorded.
+                  </p>
+                  <div className="bg-neutral-950 rounded-xl p-4 font-mono text-xs overflow-x-auto">
+                    <pre className="text-neutral-300 whitespace-pre">{`{
+  "event": "payment.captured",
+  "payload": {
+    "payment": {
+      "entity": {
+        "id": "pay_XXXXXXXX",
+        "order_id": "order_XXXXXXXX",
+        "amount": 49900,
+        "currency": "INR",
+        "notes": {
+          "type": "ticket",
+          "event_id": "uuid",
+          "buyer_name": "Arun Kumar",
+          "buyer_email": "arun@example.com"
+        }
+      }
+    }
+  }
+}`}</pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Setup steps */}
+              <div className="bg-white border border-neutral-100 rounded-2xl p-6">
+                <h3 className="text-sm font-semibold text-neutral-800 mb-5">Setup checklist</h3>
+                <div className="flex flex-col gap-0">
+                  {[
+                    ["Add the URPASS webhook URL in Razorpay Dashboard → Webhooks", "https://urpass.space/api/webhook/razorpay"],
+                    ["Select the event type: payment.captured", null],
+                    ["Copy the Webhook Secret from Razorpay and add it to your Railway/Vercel environment as RAZORPAY_WEBHOOK_SECRET", null],
+                    ["Test with a real payment — the Razorpay dashboard shows delivery status and lets you retry", null],
+                  ].map(([step, code], i) => (
+                    <div key={i} className="flex gap-4 pb-5 border-b border-neutral-100 last:border-0 last:pb-0 mb-5 last:mb-0">
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 mt-0.5"
+                        style={{ background: "#6D28D9" }}
+                      >
+                        {i + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-neutral-600">{step as string}</p>
+                        {code && (
+                          <code className="mt-1.5 block text-xs font-mono text-brand bg-brand-50 border border-brand-100 px-3 py-1.5 rounded-lg">
+                            {code as string}
+                          </code>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
 

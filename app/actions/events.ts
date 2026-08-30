@@ -50,9 +50,17 @@ export async function createEvent(data: EventInput): Promise<ActionResult> {
     .eq("apply_slug", apply_slug);
   if ((slugExists ?? 0) > 0) apply_slug = generateApplySlug();
 
+  // If not a paid event, ensure ticket_price is 0
+  const eventData = {
+    ...parsed.data,
+    ticket_price: parsed.data.is_paid_event ? parsed.data.ticket_price : 0,
+    organizer_id: user.id,
+    apply_slug,
+  };
+
   const { data: event, error } = await supabase
     .from("events")
-    .insert({ ...parsed.data, organizer_id: user.id, apply_slug })
+    .insert(eventData)
     .select("id")
     .single();
 

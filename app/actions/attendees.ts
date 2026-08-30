@@ -5,8 +5,9 @@ import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { attendeeSchema, type AttendeeInput } from "@/lib/validations/attendee";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { sendApplicationConfirmationEmail, sendPassEmail } from "@/lib/email";
+import { sendApplicationConfirmationEmail, sendApprovalEmail, sendPassEmail } from "@/lib/email";
 import { getUserPlan } from "@/lib/plan";
+import crypto from "crypto";
 
 function adminClient() {
   return createAdminClient(
@@ -18,7 +19,7 @@ function adminClient() {
 type ActionResult = { error: string } | undefined;
 
 function revalidateEvent(eventId: string) {
-  revalidatePath(`/event/${eventId}/attendees`);
+  // Only revalidate the overview — the attendees page is realtime-driven
   revalidatePath(`/event/${eventId}`);
 }
 
@@ -68,6 +69,22 @@ export async function approveAttendee(
     .eq("event_id", eventId);
 
   if (error) return { error: error.message };
+
+  // Notify the attendee they've been approved
+  const [{ data: att }, { data: evt }] = await Promise.all([
+    supabase.from("attendees").select("name, email").eq("id", attendeeId).single(),
+    supabase.from("events").select("name, event_date, venue").eq("id", eventId).single(),
+  ]);
+  if (att && evt) {
+    sendApprovalEmail({
+      to: att.email,
+      attendeeName: att.name,
+      eventName: evt.name,
+      eventDate: evt.event_date,
+      venue: evt.venue,
+    }).catch((err: unknown) => console.error("[email]", err));
+  }
+
   revalidateEvent(eventId);
 }
 
@@ -174,21 +191,60 @@ export async function bulkAddAttendees(
   return { added, skipped };
 }
 
+interface PaymentVerification {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+}
+
 export async function submitApplication(
   eventId: string,
-  data: AttendeeInput
+  data: AttendeeInput,
+  payment?: PaymentVerification
 ): Promise<{ error?: string; passToken?: string } | undefined> {
   const admin = adminClient();
 
   const { data: event } = await admin
     .from("events")
-    .select("id, status, application_enabled, auto_approve, attendee_limit, name, event_date, venue")
+    .select("id, status, application_enabled, auto_approve, attendee_limit, name, event_date, venue, is_paid_event, organizer_id")
     .eq("id", eventId)
     .eq("status", "active")
     .eq("application_enabled", true)
     .single();
 
   if (!event) return { error: "Applications are not open for this event." };
+
+  // Verify Razorpay payment signature for paid events
+  if (event.is_paid_event) {
+    if (!payment?.orderId || !payment?.paymentId || !payment?.signature) {
+      return { error: "Payment verification data is missing." };
+    }
+
+    const { data: paymentSettings } = await admin
+      .from("payment_settings")
+      .select("razorpay_key_secret")
+      .eq("user_id", event.organizer_id)
+      .single();
+
+    if (!paymentSettings?.razorpay_key_secret) {
+      return { error: "Payment gateway not configured for this event." };
+    }
+
+    const expected = crypto
+      .createHmac("sha256", paymentSettings.razorpay_key_secret)
+      .update(`${payment.orderId}|${payment.paymentId}`)
+      .digest("hex");
+
+    if (expected !== payment.signature) {
+      return { error: "Payment verification failed. Please try again." };
+    }
+
+    // Mark ticket order as paid
+    await admin
+      .from("ticket_orders")
+      .update({ status: "paid", razorpay_payment_id: payment.paymentId, updated_at: new Date().toISOString() })
+      .eq("razorpay_order_id", payment.orderId);
+  }
 
   const parsed = attendeeSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
@@ -235,7 +291,8 @@ export async function submitApplication(
         eventDate: event.event_date,
         venue: event.venue,
         passToken: pass.pass_token,
-      }).catch(() => {});
+        passType: attendee.pass_type,
+      }).catch((err: unknown) => console.error("[email]", err));
 
       return { passToken: pass.pass_token };
     }
@@ -263,7 +320,7 @@ export async function submitApplication(
     eventName: event.name,
     eventDate: event.event_date,
     venue: event.venue,
-  }).catch(() => {});
+  }).catch((err: unknown) => console.error("[email]", err));
 }
 
 export async function exportAttendeesCSV(

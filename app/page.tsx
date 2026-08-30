@@ -158,9 +158,10 @@ function ScanResult() {
 
 // ─── Plans ────────────────────────────────────────────────────────────────────
 const plans = [
-  { name: "Free",    price: "₹0",   period: "forever", recommended: false, cta: "Start free",    features: ["1 active event", "50 attendees", "Digital passes", "QR check-in", "Basic dashboard"] },
-  { name: "Starter", price: "₹299", period: "/month (+18% GST)", recommended: true,  cta: "Start Starter", features: ["5 active events", "500 attendees/event", "CSV upload", "QR check-in", "Remove branding"] },
-  { name: "Pro",     price: "₹799", period: "/month (+18% GST)", recommended: false, cta: "Go Pro",        features: ["Unlimited events", "2,000 attendees/event", "Custom branding", "Data export", "Advanced check-in"] },
+  { name: "Free",       price: "₹0",       period: "forever",            recommended: false, cta: "Start free",    features: ["1 active event", "50 attendees", "Digital passes", "QR check-in", "Basic dashboard"] },
+  { name: "Starter",    price: "₹299",     period: "/month (+18% GST)",  recommended: true,  cta: "Start Starter", features: ["5 active events", "500 attendees/event", "CSV upload", "QR check-in", "Remove branding"] },
+  { name: "Pro",        price: "₹799",     period: "/month (+18% GST)",  recommended: false, cta: "Go Pro",        features: ["Unlimited events", "2,000 attendees/event", "Custom branding", "Data export", "Advanced check-in"] },
+  { name: "Enterprise", price: "Custom",   period: "pricing",            recommended: false, cta: "Contact sales", features: ["Everything in Pro", "Dedicated support", "Custom SLAs", "Volume discounts", "Onboarding help", "Invoice billing"] },
 ];
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -404,13 +405,18 @@ export default function LandingPage() {
             </div>
           </AnimateIn>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
             {plans.map((plan, i) => (
               <AnimateIn key={plan.name} delay={i * 90} from="up">
-                <div className={`relative rounded-2xl flex flex-col p-7 h-full ${plan.recommended ? "bg-neutral-900 text-white shadow-xl" : "bg-white border border-neutral-100"}`}>
+                <div className={`relative rounded-2xl flex flex-col p-7 h-full ${plan.recommended ? "bg-neutral-900 text-white shadow-xl" : plan.name === "Enterprise" ? "bg-white border-2 border-neutral-900" : "bg-white border border-neutral-100"}`}>
                   {plan.recommended && (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-bold tracking-widest bg-brand text-white px-3 py-1 rounded-full">
                       RECOMMENDED
+                    </span>
+                  )}
+                  {plan.name === "Enterprise" && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-bold tracking-widest bg-neutral-900 text-white px-3 py-1 rounded-full whitespace-nowrap">
+                      FOR LARGE TEAMS
                     </span>
                   )}
                   <p className={`text-xs font-semibold tracking-widest mb-4 ${plan.recommended ? "text-white/50" : "text-neutral-400"}`}>
@@ -430,9 +436,15 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Link href="/signup" className={`w-full text-center py-3 rounded-xl text-sm font-semibold transition-colors ${plan.recommended ? "bg-white text-neutral-900 hover:bg-neutral-100" : "bg-neutral-900 text-white hover:bg-neutral-700"}`}>
-                    {plan.cta}
-                  </Link>
+                  {plan.name === "Enterprise" ? (
+                    <Link href="/contact" className="w-full text-center py-3 rounded-xl text-sm font-semibold transition-colors bg-neutral-900 text-white hover:bg-neutral-700">
+                      {plan.cta}
+                    </Link>
+                  ) : (
+                    <Link href="/signup" className={`w-full text-center py-3 rounded-xl text-sm font-semibold transition-colors ${plan.recommended ? "bg-white text-neutral-900 hover:bg-neutral-100" : "bg-neutral-900 text-white hover:bg-neutral-700"}`}>
+                      {plan.cta}
+                    </Link>
+                  )}
                 </div>
               </AnimateIn>
             ))}
@@ -483,17 +495,16 @@ export default function LandingPage() {
           <div>
             <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-3">Company</p>
             <ul className="flex flex-col gap-2">
-              {["About", "Contact"].map((l) => (
-                <li key={l}><a href="#" className="text-xs text-white/40 hover:text-white/70 transition-colors">{l}</a></li>
-              ))}
+              <li><a href="/contact" className="text-xs text-white/40 hover:text-white/70 transition-colors">Contact</a></li>
+              <li><a href="/feedback" className="text-xs text-white/40 hover:text-white/70 transition-colors">Feedback</a></li>
+              <li><a href="/docs" className="text-xs text-white/40 hover:text-white/70 transition-colors">Docs</a></li>
             </ul>
           </div>
           <div>
             <p className="text-xs font-semibold text-white/40 uppercase tracking-widest mb-3">Legal</p>
             <ul className="flex flex-col gap-2">
-              {["Privacy", "Terms"].map((l) => (
-                <li key={l}><a href="#" className="text-xs text-white/40 hover:text-white/70 transition-colors">{l}</a></li>
-              ))}
+              <li><a href="/terms" className="text-xs text-white/40 hover:text-white/70 transition-colors">Terms</a></li>
+              <li><a href="/contact" className="text-xs text-white/40 hover:text-white/70 transition-colors">Privacy</a></li>
             </ul>
           </div>
         </div>

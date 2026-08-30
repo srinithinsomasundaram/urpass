@@ -8,6 +8,15 @@ import DownloadPassButton from "@/components/pass/DownloadPassButton";
 import AutoDownload from "@/components/pass/AutoDownload";
 import { Suspense } from "react";
 
+function darkenHex(hex: string, amount = 40): string {
+  const clean = hex.replace("#", "");
+  if (clean.length !== 6) return hex;
+  const r = Math.max(0, parseInt(clean.slice(0, 2), 16) - amount);
+  const g = Math.max(0, parseInt(clean.slice(2, 4), 16) - amount);
+  const b = Math.max(0, parseInt(clean.slice(4, 6), 16) - amount);
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -78,16 +87,31 @@ export default async function PassPage({
 
   if (!attendee || !event) notFound();
 
-  // Fetch organizer plan to determine branding visibility
+  // Fetch organizer plan + branding
   const { data: eventOrg } = await supabase
     .from("events")
     .select("organizer_id")
     .eq("id", pass.event_id)
     .single();
 
-  const showBranding = eventOrg
-    ? !(await getUserPlan(supabase, eventOrg.organizer_id)).canRemoveBranding
-    : true;
+  const organizerId = eventOrg?.organizer_id ?? null;
+  const [plan, { data: orgProfile }] = await Promise.all([
+    organizerId ? getUserPlan(supabase, organizerId) : Promise.resolve(null),
+    organizerId
+      ? supabase
+          .from("profiles")
+          .select("org_name, brand_color, org_logo_url, hide_urpass_branding")
+          .eq("user_id", organizerId)
+          .single()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const showBranding = !(plan?.canRemoveBranding && orgProfile?.hide_urpass_branding);
+  const isPro = plan?.slug === "pro";
+  const brandColor = (isPro && orgProfile?.brand_color) ? orgProfile.brand_color : "#6D28D9";
+  const brandColorDark = darkenHex(brandColor);
+  const orgName = (isPro && orgProfile?.org_name) ? orgProfile.org_name : null;
+  const orgLogoUrl = (isPro && orgProfile?.org_logo_url) ? orgProfile.org_logo_url : null;
 
   const isCheckedIn = pass.status === "checked_in";
   const formattedDate = new Date(event.event_date).toLocaleDateString("en-IN", {
@@ -129,10 +153,10 @@ export default async function PassPage({
         <div className="absolute inset-0 translate-x-2.5 translate-y-2.5 bg-brand-200 rounded-3xl" />
 
         <div className="relative bg-white rounded-3xl shadow-2xl border border-neutral-100 overflow-hidden animate-float">
-          {/* Brand purple header */}
+          {/* Brand header */}
           <div
             className="px-6 pt-6 pb-8 relative overflow-hidden"
-            style={{ background: "linear-gradient(135deg, #6D28D9 0%, #4c1d95 100%)" }}
+            style={{ background: `linear-gradient(135deg, ${brandColor} 0%, ${brandColorDark} 100%)` }}
           >
             <div
               className="absolute inset-0 opacity-20"
@@ -144,9 +168,15 @@ export default async function PassPage({
 
             <div className="relative flex items-start justify-between mb-5">
               <div className="min-w-0 pr-3">
-                <p className="text-[10px] font-bold tracking-widest uppercase text-purple-300 mb-1.5">
-                  Event Pass
-                </p>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  {orgLogoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={orgLogoUrl} alt="logo" className="w-4 h-4 rounded object-cover" />
+                  )}
+                  <p className="text-[10px] font-bold tracking-widest uppercase text-white/60">
+                    {orgName ? `${orgName} · Event Pass` : "Event Pass"}
+                  </p>
+                </div>
                 <h1 className="text-xl font-bold text-white leading-snug">
                   {event.name}
                 </h1>

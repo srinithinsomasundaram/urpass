@@ -14,6 +14,7 @@ import {
   User,
   Phone,
   AlertCircle,
+  IndianRupee,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { attendeeSchema, type AttendeeInput } from "@/lib/validations/attendee";
@@ -27,6 +28,15 @@ interface EventInfo {
   start_time: string;
   venue: string;
   auto_approve: boolean;
+  is_paid_event: boolean;
+  ticket_price: number;
+}
+
+interface Branding {
+  showUrpassBranding: boolean;
+  orgName: string | null;
+  brandColor: string;
+  orgLogoUrl: string | null;
 }
 
 type SuccessState =
@@ -38,18 +48,50 @@ const BG = "radial-gradient(ellipse 100% 50% at 50% -10%, #ede9fe 0%, #f5f3ff 40
 const inputCls =
   "bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand focus:bg-white transition-all w-full placeholder:text-neutral-400";
 
-function Wordmark() {
+function Wordmark({ branding }: { branding: Branding }) {
+  if (!branding.showUrpassBranding && !branding.orgName) return null;
   return (
     <div className="flex items-center gap-1.5 mb-8 apply-in-1">
-      <Ticket className="w-4 h-4 text-brand" />
-      <span className="text-sm font-bold tracking-widest uppercase text-neutral-900">URPASS</span>
+      {branding.orgLogoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={branding.orgLogoUrl} alt="logo" className="w-5 h-5 rounded object-cover" />
+      ) : (
+        <Ticket className="w-4 h-4" style={{ color: branding.brandColor }} />
+      )}
+      <span className="text-sm font-bold tracking-widest uppercase text-neutral-900">
+        {branding.orgName ?? "URPASS"}
+      </span>
     </div>
   );
 }
 
-export default function ApplyForm({ event }: { event: EventInfo }) {
+interface RazorpayResponse {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+}
+
+declare global {
+  interface Window {
+    Razorpay: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
+
+export default function ApplyForm({ event, branding }: { event: EventInfo; branding: Branding }) {
   const [success, setSuccess] = useState<SuccessState | null>(null);
   const [serverError, setServerError] = useState("");
+  const [paymentPending, setPaymentPending] = useState(false);
 
   const {
     register,
@@ -67,7 +109,75 @@ export default function ApplyForm({ event }: { event: EventInfo }) {
     year: "numeric",
   });
 
+  const ticketPriceRupees = event.is_paid_event ? event.ticket_price : 0;
+
+  async function handlePaidSubmit(data: AttendeeInput) {
+    setServerError("");
+    setPaymentPending(true);
+
+    const loaded = await loadRazorpayScript();
+    if (!loaded) {
+      setServerError("Payment service unavailable. Please try again.");
+      setPaymentPending(false);
+      return;
+    }
+
+    const res = await fetch("/api/razorpay/ticket-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventId: event.id,
+        buyerName: data.name,
+        buyerEmail: data.email,
+      }),
+    });
+    const order = await res.json();
+    if (!res.ok) {
+      setServerError(order.error ?? "Failed to create payment order");
+      setPaymentPending(false);
+      return;
+    }
+
+    const rzp = new window.Razorpay({
+      key: order.keyId,
+      amount: order.amount,
+      currency: order.currency,
+      name: "URPASS",
+      description: `Ticket — ${order.eventName}`,
+      order_id: order.orderId,
+      prefill: { name: data.name, email: data.email, contact: data.phone ?? "" },
+      theme: { color: "#6D28D9" },
+      handler: async (response: RazorpayResponse) => {
+        const result = await submitApplication(event.id, data, {
+          orderId: response.razorpay_order_id,
+          paymentId: response.razorpay_payment_id,
+          signature: response.razorpay_signature,
+        });
+        setPaymentPending(false);
+        if (result?.error) {
+          setServerError(result.error);
+          return;
+        }
+        if (result?.passToken) {
+          setSuccess({ type: "pass", passToken: result.passToken, attendeeName: data.name, attendeeEmail: data.email });
+        } else {
+          setSuccess({ type: "pending", attendeeName: data.name });
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          setPaymentPending(false);
+          setServerError("Payment was cancelled. Please try again.");
+        },
+      },
+    });
+    rzp.open();
+  }
+
   async function onSubmit(data: AttendeeInput) {
+    if (event.is_paid_event) {
+      return handlePaidSubmit(data);
+    }
     setServerError("");
     const result = await submitApplication(event.id, data);
     if (result?.error) {
@@ -98,7 +208,7 @@ export default function ApplyForm({ event }: { event: EventInfo }) {
         className="min-h-screen flex flex-col items-center justify-center p-5"
         style={{ background: BG }}
       >
-        <Wordmark />
+        <Wordmark branding={branding} />
 
         <p className="text-xs font-semibold tracking-widest uppercase text-brand mb-4 pass-scale-in">
           Your pass is ready
@@ -190,7 +300,9 @@ export default function ApplyForm({ event }: { event: EventInfo }) {
           </p>
         </div>
 
-        <p className="text-xs text-neutral-300 mt-6 pass-in-3">Powered by URPASS</p>
+        {branding.showUrpassBranding && (
+          <p className="text-xs text-neutral-300 mt-6 pass-in-3">Powered by URPASS</p>
+        )}
       </div>
     );
   }
@@ -202,7 +314,7 @@ export default function ApplyForm({ event }: { event: EventInfo }) {
         className="min-h-screen flex flex-col items-center justify-center p-5"
         style={{ background: BG }}
       >
-        <Wordmark />
+        <Wordmark branding={branding} />
 
         <div className="pass-scale-in w-full max-w-sm">
           <div
@@ -240,7 +352,9 @@ export default function ApplyForm({ event }: { event: EventInfo }) {
           </div>
         </div>
 
-        <p className="text-xs text-neutral-300 mt-8 pass-in-2">Powered by URPASS</p>
+        {branding.showUrpassBranding && (
+          <p className="text-xs text-neutral-300 mt-8 pass-in-2">Powered by URPASS</p>
+        )}
       </div>
     );
   }
@@ -252,7 +366,7 @@ export default function ApplyForm({ event }: { event: EventInfo }) {
       style={{ background: BG }}
     >
       <div className="w-full max-w-[480px]">
-        <Wordmark />
+        <Wordmark branding={branding} />
 
         {/* Event info */}
         <div className="mb-5 apply-in-2">
@@ -284,9 +398,15 @@ export default function ApplyForm({ event }: { event: EventInfo }) {
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
             Open
           </span>
-          {event.auto_approve && (
+          {event.auto_approve && !event.is_paid_event && (
             <span className="text-xs font-medium text-brand bg-brand-50 border border-brand-100 px-2.5 py-1 rounded-full">
               Instant pass
+            </span>
+          )}
+          {event.is_paid_event && (
+            <span className="flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-full">
+              <IndianRupee className="w-3 h-3" />
+              ₹{ticketPriceRupees.toLocaleString("en-IN")} ticket
             </span>
           )}
         </div>
@@ -370,21 +490,32 @@ export default function ApplyForm({ event }: { event: EventInfo }) {
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || paymentPending}
               className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 mt-1"
               style={{ background: "#6D28D9" }}
             >
-              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isSubmitting
+              {(isSubmitting || paymentPending) && <Loader2 className="w-4 h-4 animate-spin" />}
+              {paymentPending
+                ? "Processing payment…"
+                : isSubmitting
                 ? event.auto_approve
                   ? "Generating your pass…"
                   : "Submitting…"
+                : event.is_paid_event
+                ? `Pay ₹${ticketPriceRupees.toLocaleString("en-IN")} & Apply`
                 : "Apply to attend"}
             </button>
+            {event.is_paid_event && (
+              <p className="text-xs text-center text-neutral-400 mt-1">
+                Secure payment via Razorpay · Your pass is issued after payment
+              </p>
+            )}
           </form>
         </div>
 
-        <p className="text-center text-xs text-neutral-300 mt-6">Powered by URPASS</p>
+        {branding.showUrpassBranding && (
+          <p className="text-center text-xs text-neutral-300 mt-6">Powered by URPASS</p>
+        )}
       </div>
     </div>
   );

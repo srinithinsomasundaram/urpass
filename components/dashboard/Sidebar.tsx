@@ -13,24 +13,53 @@ import {
   LogOut,
   Ticket,
   Star,
+  Key,
+  Palette,
+  Zap,
+  ChevronRight,
 } from "lucide-react";
 
-const nav = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, exact: true },
-  { label: "Events", href: "/dashboard/events", icon: Calendar },
-  { label: "Scanner", href: "/scan", icon: ScanLine },
-  { label: "Billing", href: "/billing", icon: CreditCard },
+const mainNav = [
+  { label: "Dashboard", href: "/dashboard",        icon: LayoutDashboard, exact: true },
+  { label: "Events",    href: "/dashboard/events", icon: Calendar,        exact: false },
+  { label: "Scanner",   href: "/scan",              icon: ScanLine,        exact: false },
 ];
 
-const bottom = [
+const bottomNav = [
+  { label: "Billing",  href: "/billing",            icon: CreditCard },
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-type Props = {
-  email: string;
-  fullName: string;
-  planSlug?: string;
-};
+type Props = { email: string; fullName: string; planSlug?: string };
+
+function NavLink({ href, icon: Icon, label, active }: {
+  href: string; icon: React.ComponentType<{ className?: string }>;
+  label: string; exact?: boolean; active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+        active
+          ? "bg-white/10 text-white"
+          : "text-white/45 hover:text-white/80 hover:bg-white/6"
+      )}
+    >
+      <Icon className={cn("w-4 h-4 shrink-0", active ? "text-white" : "text-white/40")} />
+      {label}
+      {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand-200 shrink-0" />}
+    </Link>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[9px] font-bold tracking-widest uppercase text-white/25 px-3 mb-1">
+      {children}
+    </p>
+  );
+}
 
 export default function Sidebar({ email, fullName, planSlug }: Props) {
   const pathname = usePathname();
@@ -48,120 +77,127 @@ export default function Sidebar({ email, fullName, planSlug }: Props) {
   }
 
   const initials = fullName
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
+    .split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "U";
+
+  const planBadge =
+    planSlug === "enterprise" ? { label: "Enterprise", color: "#94a3b8" }
+    : planSlug === "pro"      ? { label: "Pro",        color: "#fbbf24" }
+    : planSlug === "starter"  ? { label: "Starter",    color: "#a78bfa" }
+    : null;
 
   return (
-    <aside className="hidden lg:flex flex-col w-60 shrink-0 border-r border-neutral-100 h-screen sticky top-0 px-4 py-6">
-      {/* Logo */}
-      <Link href="/dashboard" className="flex items-center gap-2 px-2 mb-8">
-        <div className="relative shrink-0">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center"
-            style={{
-              background: planSlug === "pro"
-                ? "linear-gradient(135deg, #F59E0B, #B45309)"
-                : planSlug === "starter"
-                ? "linear-gradient(135deg, #8B5CF6, #6D28D9)"
-                : "linear-gradient(135deg, #6D28D9, #4c1d95)",
-            }}
-          >
-            <Ticket className="w-3.5 h-3.5 text-white" />
-          </div>
-          {planSlug === "starter" && (
-            <div className="absolute -top-1 -right-1 bg-amber-400 border border-white rounded-full p-0.5 shadow-sm">
-              <Star className="w-2 h-2 fill-neutral-950 text-neutral-950" />
-            </div>
-          )}
-        </div>
-        <span className="text-sm font-bold tracking-widest uppercase text-neutral-900">
-          URPASS
-        </span>
-        {planSlug === "starter" && (
-          <span
-            className="flex items-center gap-0.5 text-[9px] font-bold tracking-widest uppercase px-1.5 py-0.5 rounded-full text-purple-700 border border-purple-200"
-            style={{ background: "linear-gradient(135deg, #F3E8FF, #E9D5FF)" }}
-          >
-            STARTER
-          </span>
-        )}
-        {planSlug === "pro" && (
-          <span
-            className="text-[9px] font-bold tracking-widest uppercase px-1.5 py-0.5 rounded-full text-amber-700 border border-amber-200"
-            style={{ background: "linear-gradient(135deg, #FEF3C7, #FDE68A)" }}
-          >
-            PRO
-          </span>
-        )}
-      </Link>
+    <aside
+      className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0"
+      style={{ background: "linear-gradient(160deg, #13111c 0%, #0e0c16 100%)" }}
+    >
+      {/* Subtle top glow */}
+      <div
+        className="absolute top-0 left-0 right-0 h-40 pointer-events-none"
+        style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(109,40,217,0.18) 0%, transparent 100%)" }}
+      />
 
-      {/* Primary nav */}
-      <nav className="flex flex-col gap-0.5 flex-1">
-        {nav.map(({ label, href, icon: Icon, exact }) => {
-          const active = isActive(href, exact);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all",
-                active
-                  ? "bg-brand-50 text-brand font-semibold border border-brand-100"
-                  : "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50"
-              )}
-            >
-              <Icon className={cn("w-4 h-4 shrink-0", active ? "text-brand" : "")} />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+      <div className="relative flex flex-col h-full px-3 py-5 gap-5">
 
-      {/* Bottom */}
-      <div className="flex flex-col gap-0.5">
-        {bottom.map(({ label, href, icon: Icon }) => {
-          const active = isActive(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all",
-                active
-                  ? "bg-brand-50 text-brand font-semibold border border-brand-100"
-                  : "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50"
-              )}
-            >
-              <Icon className={cn("w-4 h-4 shrink-0", active ? "text-brand" : "")} />
-              {label}
-            </Link>
-          );
-        })}
-
-        <div className="mt-3 pt-3 border-t border-neutral-100">
-          {/* User pill */}
-          <div className="flex items-center gap-2.5 px-3 py-2 mb-1 rounded-xl hover:bg-neutral-50 transition-colors">
+        {/* ── Logo ──────────────────────────────────────────────── */}
+        <Link href="/dashboard" className="flex items-center gap-2.5 px-2 py-1 mb-1">
+          <div className="relative shrink-0">
             <div
-              className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold text-white"
+              className="w-8 h-8 rounded-xl flex items-center justify-center shadow-lg"
               style={{ background: "linear-gradient(135deg, #6D28D9, #4c1d95)" }}
             >
-              {initials || "U"}
+              <Ticket className="w-4 h-4 text-white" />
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-semibold truncate text-neutral-900">{fullName}</span>
-              <span className="text-[10px] text-neutral-400 truncate">{email}</span>
-            </div>
+            {planSlug === "starter" && (
+              <div className="absolute -top-1 -right-1 bg-amber-400 border-2 border-[#0f0620] rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                <Star className="w-2 h-2 fill-neutral-950 text-neutral-950" />
+              </div>
+            )}
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-all w-full"
+          <div className="flex flex-col">
+            <span className="text-sm font-black tracking-widest uppercase text-white leading-none">
+              URPASS
+            </span>
+            {planBadge && (
+              <span
+                className="text-[9px] font-bold tracking-widest uppercase leading-none mt-0.5"
+                style={{ color: planBadge.color }}
+              >
+                {planBadge.label}
+              </span>
+            )}
+          </div>
+        </Link>
+
+        {/* ── Main nav ──────────────────────────────────────────── */}
+        <nav className="flex flex-col gap-0.5">
+          <SectionLabel>Main</SectionLabel>
+          {mainNav.map(({ label, href, icon, exact }) => (
+            <NavLink key={href} href={href} icon={icon} label={label} exact={exact} active={isActive(href, exact)} />
+          ))}
+        </nav>
+
+        {/* ── Tools nav ─────────────────────────────────────────── */}
+        {planSlug && planSlug !== "free" && (
+          <nav className="flex flex-col gap-0.5">
+            <SectionLabel>Tools</SectionLabel>
+            <NavLink href="/dashboard/branding" icon={Palette} label="Branding" active={isActive("/dashboard/branding")} />
+            {(planSlug === "pro" || planSlug === "enterprise") && (
+              <NavLink href="/dashboard/api-keys" icon={Key} label="API Keys" active={isActive("/dashboard/api-keys")} />
+            )}
+          </nav>
+        )}
+
+        {/* ── Spacer ────────────────────────────────────────────── */}
+        <div className="flex-1" />
+
+        {/* ── Upgrade CTA (free only) ───────────────────────────── */}
+        {(!planSlug || planSlug === "free") && (
+          <Link
+            href="/billing"
+            className="relative overflow-hidden flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-opacity hover:opacity-90"
+            style={{ background: "linear-gradient(135deg, rgba(109,40,217,0.5), rgba(76,29,149,0.5))" }}
           >
-            <LogOut className="w-4 h-4 shrink-0" />
-            Sign out
-          </button>
+            <div className="absolute inset-0 border border-white/10 rounded-2xl pointer-events-none" />
+            <div className="w-7 h-7 bg-white/15 rounded-lg flex items-center justify-center shrink-0">
+              <Zap className="w-3.5 h-3.5 text-yellow-300" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-white leading-none">Upgrade plan</p>
+              <p className="text-[10px] text-white/50 mt-0.5 leading-none">Unlock more features</p>
+            </div>
+            <ChevronRight className="w-3.5 h-3.5 text-white/30 shrink-0" />
+          </Link>
+        )}
+
+        {/* ── Account nav ───────────────────────────────────────── */}
+        <nav className="flex flex-col gap-0.5">
+          <SectionLabel>Account</SectionLabel>
+          {bottomNav.map(({ label, href, icon }) => (
+            <NavLink key={href} href={href} icon={icon} label={label} active={isActive(href)} />
+          ))}
+        </nav>
+
+        {/* ── User row ──────────────────────────────────────────── */}
+        <div className="border-t border-white/8 pt-4">
+          <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-white/6 transition-colors group cursor-default">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold text-white ring-2 ring-white/10"
+              style={{ background: "linear-gradient(135deg, #6D28D9, #4c1d95)" }}
+            >
+              {initials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold truncate text-white/80">{fullName}</p>
+              <p className="text-[10px] text-white/30 truncate">{email}</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-white/20 hover:text-red-400 hover:bg-red-500/15 transition-all opacity-0 group-hover:opacity-100"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
     </aside>

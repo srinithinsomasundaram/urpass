@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Loader2, Lock } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, IndianRupee } from "lucide-react";
 import { eventSchema, type EventInput } from "@/lib/validations/event";
 import { createEvent } from "@/app/actions/events";
 
@@ -13,6 +13,7 @@ interface Props {
   activeEventCount: number;
   maxEvents: number;
   unlimited: boolean;
+  canCreatePaidEvents: boolean;
 }
 
 function Field({
@@ -39,7 +40,7 @@ function Field({
 const inputCls =
   "border border-neutral-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-neutral-900 transition-colors bg-white placeholder:text-neutral-300";
 
-export default function CreateEventForm({ maxAttendees, activeEventCount, maxEvents, unlimited }: Props) {
+export default function CreateEventForm({ maxAttendees, activeEventCount, maxEvents, unlimited, canCreatePaidEvents }: Props) {
   const [serverError, setServerError] = useState("");
 
   const atLimit = !unlimited && activeEventCount >= maxEvents;
@@ -57,11 +58,14 @@ export default function CreateEventForm({ maxAttendees, activeEventCount, maxEve
       application_enabled: true,
       auto_approve: false,
       attendee_limit: Math.min(100, maxAttendees),
+      is_paid_event: false,
+      ticket_price: 0,
     },
   });
 
   const applicationEnabled = watch("application_enabled");
   const autoApprove = watch("auto_approve");
+  const isPaidEvent = watch("is_paid_event");
 
   async function onSubmit(data: EventInput) {
     setServerError("");
@@ -235,6 +239,79 @@ export default function CreateEventForm({ maxAttendees, activeEventCount, maxEve
                     />
                   </button>
                 </div>
+              )}
+            </div>
+            {/* Paid event */}
+            <div className="bg-white border border-neutral-100 rounded-2xl p-6 flex flex-col gap-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-semibold text-neutral-800">Ticket payment</h2>
+                  <p className="text-xs text-neutral-400 mt-0.5">Charge attendees via Razorpay</p>
+                </div>
+                {!canCreatePaidEvents && (
+                  <span className="flex items-center gap-1 text-xs text-amber-600 bg-amber-50 border border-amber-100 px-2.5 py-1 rounded-full">
+                    <Lock className="w-3 h-3" />
+                    Starter+
+                  </span>
+                )}
+              </div>
+
+              {canCreatePaidEvents ? (
+                <>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-neutral-800">Paid event</p>
+                      <p className="text-xs text-neutral-400 mt-0.5">
+                        Require attendees to pay before registering
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isPaidEvent}
+                      onClick={() => setValue("is_paid_event", !isPaidEvent)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full shrink-0 transition-colors ${
+                        isPaidEvent ? "bg-neutral-900" : "bg-neutral-200"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                          isPaidEvent ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {isPaidEvent && (
+                    <Field
+                      label="Ticket price (₹)"
+                      error={errors.ticket_price?.message}
+                      hint="Amount in rupees. Attendees pay this before their application is submitted."
+                    >
+                      <div className="relative">
+                        <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+                        <input
+                          type="number"
+                          min={1}
+                          max={100000}
+                          placeholder="499"
+                          className={`${inputCls} pl-9`}
+                          {...register("ticket_price", {
+                            valueAsNumber: true,
+                            setValueAs: (v) => Math.round(Number(v) * 100),
+                          })}
+                        />
+                      </div>
+                    </Field>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-neutral-400">
+                  Upgrade to Starter or Pro to charge for tickets.{" "}
+                  <Link href="/billing" className="text-brand underline">
+                    Upgrade
+                  </Link>
+                </p>
               )}
             </div>
           </fieldset>

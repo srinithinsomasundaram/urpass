@@ -15,6 +15,8 @@ describe("eventSchema", () => {
     status: "draft" as const,
     application_enabled: true,
     auto_approve: false,
+    is_paid_event: false,
+    ticket_price: 0,
   };
 
   it("accepts a fully valid event", () => {

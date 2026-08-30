@@ -49,14 +49,37 @@ export async function POST(req: NextRequest) {
   if (!payment) return NextResponse.json({ received: true });
 
   const notes = payment.notes ?? {};
+  const supabase = adminClient();
+
+  // Ticket payment
+  if (notes.type === "ticket") {
+    const razorpayOrderId: string = payment.order_id;
+    if (!razorpayOrderId) return NextResponse.json({ received: true });
+
+    const { error } = await supabase
+      .from("ticket_orders")
+      .update({
+        status: "paid",
+        razorpay_payment_id: payment.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("razorpay_order_id", razorpayOrderId);
+
+    if (error) {
+      console.error("ticket_orders update failed:", error.message);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ received: true });
+  }
+
+  // Subscription payment
   const userId: string = notes.user_id;
   const planId: string = notes.plan_id;
 
   if (!userId || !planId) {
     return NextResponse.json({ error: "Missing notes" }, { status: 400 });
   }
-
-  const supabase = adminClient();
 
   const periodStart = new Date();
   const periodEnd = new Date(periodStart);

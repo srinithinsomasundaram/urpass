@@ -59,6 +59,38 @@ export type Event = {
   attendee_limit: number;
   status: EventStatus;
   application_enabled: boolean;
+  is_paid_event: boolean;
+  ticket_price: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TicketOrderStatus = "created" | "paid" | "failed";
+
+export type TicketOrder = {
+  id: string;
+  event_id: string;
+  attendee_id: string | null;
+  razorpay_order_id: string;
+  razorpay_payment_id: string | null;
+  amount: number;
+  currency: string;
+  buyer_email: string;
+  buyer_name: string;
+  status: TicketOrderStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ApiKey = {
+  id: string;
+  user_id: string;
+  name: string;
+  key_prefix: string;
+  permissions: string[];
+  is_active: boolean;
+  last_used_at: string | null;
+  expires_at: string | null;
   created_at: string;
   updated_at: string;
 };

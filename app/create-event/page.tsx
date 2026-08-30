@@ -25,6 +25,7 @@ export default async function CreateEventPage() {
       activeEventCount={activeEventCount ?? 0}
       maxEvents={plan.maxEvents}
       unlimited={plan.unlimited}
+      canCreatePaidEvents={plan.canCreatePaidEvents}
     />
   );
 }

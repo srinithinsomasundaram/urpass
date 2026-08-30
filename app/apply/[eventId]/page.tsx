@@ -39,6 +39,15 @@ interface EventInfo {
   start_time: string;
   venue: string;
   auto_approve: boolean;
+  is_paid_event: boolean;
+  ticket_price: number;
+}
+
+interface Branding {
+  showUrpassBranding: boolean;
+  orgName: string | null;
+  brandColor: string;
+  orgLogoUrl: string | null;
 }
 
 const gradientBg = "radial-gradient(ellipse 100% 50% at 50% -10%, #ede9fe 0%, #f5f3ff 40%, #ffffff 70%)";
@@ -53,7 +62,7 @@ export default async function ApplyPage({
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, name, description, event_date, start_time, venue, auto_approve")
+    .select("id, name, description, event_date, start_time, venue, auto_approve, is_paid_event, ticket_price, organizer_id")
     .eq("apply_slug", slug)
     .eq("status", "active")
     .eq("application_enabled", true)
@@ -85,5 +94,32 @@ export default async function ApplyPage({
     );
   }
 
-  return <ApplyForm event={event as EventInfo} />;
+  // Fetch organizer branding
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("plan:plans(slug)")
+    .eq("user_id", event.organizer_id)
+    .eq("status", "active")
+    .single();
+
+  const planSlug = (sub?.plan as unknown as { slug: string } | null)?.slug ?? "free";
+  const isPro = planSlug === "pro";
+  const canRemoveBranding = planSlug !== "free";
+
+  const { data: orgProfile } = canRemoveBranding
+    ? await supabase
+        .from("profiles")
+        .select("org_name, brand_color, org_logo_url, hide_urpass_branding")
+        .eq("user_id", event.organizer_id)
+        .single()
+    : { data: null };
+
+  const branding: Branding = {
+    showUrpassBranding: !(canRemoveBranding && orgProfile?.hide_urpass_branding),
+    orgName: (isPro && orgProfile?.org_name) ? orgProfile.org_name : null,
+    brandColor: (isPro && orgProfile?.brand_color) ? orgProfile.brand_color : "#6D28D9",
+    orgLogoUrl: (isPro && orgProfile?.org_logo_url) ? orgProfile.org_logo_url : null,
+  };
+
+  return <ApplyForm event={event as EventInfo} branding={branding} />;
 }

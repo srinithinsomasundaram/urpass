@@ -15,6 +15,12 @@ export const eventSchema = z.object({
   status: z.enum(["draft", "active"]),
   application_enabled: z.boolean(),
   auto_approve: z.boolean(),
+  is_paid_event: z.boolean(),
+  ticket_price: z
+    .number({ invalid_type_error: "Must be a number" })
+    .int()
+    .min(0, "Price cannot be negative")
+    .max(100_000_00, "Maximum ticket price is ₹1,00,000"),
 });
 
 export type EventInput = z.infer<typeof eventSchema>;

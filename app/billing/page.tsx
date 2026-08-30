@@ -18,6 +18,8 @@ import {
   ShieldCheck,
   Calendar,
   Users,
+  Building2,
+  Mail,
 } from "lucide-react";
 import CheckoutButton from "@/components/billing/CheckoutButton";
 import CancelButton from "@/components/billing/CancelButton";
@@ -47,6 +49,7 @@ const PLAN_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   free: Sparkles,
   starter: Zap,
   pro: Crown,
+  enterprise: Building2,
 };
 
 export default async function BillingPage() {
@@ -357,6 +360,53 @@ export default async function BillingPage() {
                 </div>
               );
             })}
+          </div>
+
+          {/* Enterprise banner */}
+          <div className="mt-4 border-2 border-neutral-900 rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+              <div className="p-6 flex flex-col gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-neutral-100 flex items-center justify-center">
+                    <Building2 className="w-4 h-4 text-neutral-700" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-neutral-400">
+                      Enterprise
+                    </p>
+                    <p className="text-xl font-bold tracking-tight">Custom pricing</p>
+                  </div>
+                </div>
+                <p className="text-sm text-neutral-500 leading-relaxed">
+                  Need more than Pro? Get volume discounts, dedicated support, custom SLAs,
+                  invoice billing, and a tailored onboarding experience.
+                </p>
+              </div>
+              <div className="p-6 flex flex-col justify-center gap-3 md:border-l border-t md:border-t-0 border-neutral-100">
+                <ul className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  {[
+                    "Everything in Pro",
+                    "Dedicated support",
+                    "Custom SLAs",
+                    "Volume discounts",
+                    "Invoice billing",
+                    "Onboarding help",
+                  ].map((f) => (
+                    <li key={f} className="flex items-center gap-1.5 text-xs text-neutral-600">
+                      <Check className="w-3 h-3 text-brand shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center justify-center gap-2 mt-2 py-2.5 px-5 rounded-xl text-sm font-semibold bg-neutral-900 text-white hover:bg-neutral-700 transition-colors w-full md:w-auto"
+                >
+                  <Mail className="w-4 h-4" />
+                  Contact sales
+                </Link>
+              </div>
+            </div>
           </div>
 
           {/* Footer */}
