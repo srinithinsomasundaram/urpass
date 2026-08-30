@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -56,20 +56,69 @@ export default function LoginPage() {
     router.refresh();
   }
 
-  async function handleGoogleLogin() {
+  const handleGoogleCredential = useCallback(async (response: { credential: string }) => {
     setGoogleLoading(true);
     setServerError("");
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-    if (error) {
-      setServerError(error.message);
+    try {
+      // Verify token server-side and create/find user in Supabase
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Google sign-in failed");
+
+      // Exchange the magic-link token for a real Supabase session
+      const supabase = createClient();
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: data.token_hash,
+        type: "email",
+      });
+      if (error) throw new Error(error.message);
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err) {
+      setServerError(err instanceof Error ? err.message : "Google sign-in failed");
       setGoogleLoading(false);
     }
+  }, [router]);
+
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId === "your_google_client_id") return;
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).google?.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCredential,
+        auto_select: false,
+      });
+    };
+    document.head.appendChild(script);
+    return () => { document.head.removeChild(script); };
+  }, [handleGoogleCredential]);
+
+  function handleGoogleLogin() {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId === "your_google_client_id") {
+      setServerError("Google sign-in is not configured yet.");
+      return;
+    }
+    setGoogleLoading(true);
+    setServerError("");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).google?.accounts.id.prompt((notification: any) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        setGoogleLoading(false);
+      }
+    });
   }
 
   return (
@@ -118,7 +167,7 @@ export default function LoginPage() {
           ) : (
             <GoogleIcon />
           )}
-          {googleLoading ? "Redirecting…" : "Continue with Google"}
+          {googleLoading ? "Signing in…" : "Continue with Google"}
         </button>
 
         {/* Divider */}
