@@ -56,7 +56,6 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.gif", type: "image/gif" },
       { url: "/favicon.ico", sizes: "any" },
       { url: "/icon.png", type: "image/png" },
     ],
@@ -116,8 +115,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} h-full`}>
       <head>
-        <link rel="icon" type="image/gif" href="/favicon.gif" />
-        <link rel="shortcut icon" type="image/gif" href="/favicon.gif" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
