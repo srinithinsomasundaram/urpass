@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Loader2, Building2 } from "lucide-react";
@@ -25,6 +26,7 @@ function Field({ label, error, children, hint }: {
 }
 
 export default function CreateOrgForm() {
+  const router = useRouter();
   const [serverError, setServerError] = useState("");
 
   const {
@@ -39,7 +41,9 @@ export default function CreateOrgForm() {
   async function onSubmit(data: OrgInput) {
     setServerError("");
     const result = await createOrganization(data);
-    if (result?.error) setServerError(result.error);
+    if (!result) { router.push("/dashboard/organizations"); return; }
+    if ("error" in result) { setServerError(result.error); return; }
+    router.push(`/org/${result.slug}`);
   }
 
   return (

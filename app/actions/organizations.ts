@@ -32,7 +32,7 @@ function generateSlugCandidate(name: string, suffix?: number): string {
   return suffix ? `${base}-${suffix}` : base;
 }
 
-export async function createOrganization(data: OrgInput): Promise<ActionResult> {
+export async function createOrganization(data: OrgInput): Promise<ActionResult | { slug: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -81,7 +81,7 @@ export async function createOrganization(data: OrgInput): Promise<ActionResult> 
   if (memberError) return { error: memberError.message };
 
   revalidatePath("/dashboard/organizations");
-  redirect(`/org/${org.slug}`);
+  return { slug: org.slug };
 }
 
 export async function updateOrganization(orgId: string, data: OrgInput): Promise<ActionResult> {
@@ -149,7 +149,7 @@ export async function getUserOrganizations() {
 
   const { data } = await supabase
     .from("organization_members")
-    .select("role, status, organization:organizations(*)")
+    .select("role, organization:organizations(*)")
     .eq("user_id", user.id)
     .eq("status", "active")
     .order("created_at", { ascending: false });

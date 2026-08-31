@@ -140,9 +140,9 @@ export default function DashboardContent() {
   ];
 
   const quickActions = [
-    { label: "New event",   href: "/create-event", icon: Plus,     primary: true },
-    { label: "Open scanner", href: "/scan",         icon: ScanLine, primary: false },
-    { label: "All events",  href: "/dashboard/events", icon: Calendar, primary: false },
+    { label: "New event",    href: "/create-event",     icon: Plus,     primary: true },
+    { label: "Open scanner", href: "/scan",              icon: ScanLine, primary: false },
+    { label: "All events",   href: "/dashboard/events", icon: Calendar, primary: false },
   ];
 
   return (
