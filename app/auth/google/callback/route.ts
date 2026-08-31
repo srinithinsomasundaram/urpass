@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -13,21 +14,25 @@ interface GoogleTokenInfo {
 }
 
 function adminClient() {
-  return createClient(
+  return createSupabaseAdmin(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 }
 
-export async function POST(req: NextRequest) {
-  const { code } = await req.json().catch(() => ({}));
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const code = searchParams.get("code");
+  const error = searchParams.get("error");
 
-  if (!code || typeof code !== "string") {
-    return NextResponse.json({ error: "Missing authorization code" }, { status: 400 });
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
+
+  if (error || !code) {
+    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
   }
 
-  // Exchange authorization code for tokens
+  // Exchange authorization code for Google tokens
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -35,49 +40,47 @@ export async function POST(req: NextRequest) {
       code,
       client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri: "postmessage",
+      redirect_uri: `${appUrl}/auth/google/callback`,
       grant_type: "authorization_code",
     }),
   });
 
   const tokens = await tokenRes.json();
   if (!tokenRes.ok || !tokens.id_token) {
-    console.error("[google-auth] token exchange error:", tokens);
-    return NextResponse.json({ error: "Failed to exchange Google code" }, { status: 401 });
+    console.error("[google-callback] token exchange error:", tokens);
+    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
   }
 
-  // Verify the ID token via Google's tokeninfo endpoint
+  // Verify the ID token
   const infoRes = await fetch(
     `https://oauth2.googleapis.com/tokeninfo?id_token=${tokens.id_token}`
   );
   if (!infoRes.ok) {
-    return NextResponse.json({ error: "Invalid Google token" }, { status: 401 });
+    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
   }
 
   const info: GoogleTokenInfo = await infoRes.json();
 
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   if (clientId && info.aud !== clientId) {
-    return NextResponse.json({ error: "Token audience mismatch" }, { status: 401 });
+    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
   }
 
   if (info.email_verified !== "true") {
-    return NextResponse.json({ error: "Google email not verified" }, { status: 401 });
+    return NextResponse.redirect(`${appUrl}/login?error=google_email_unverified`);
   }
 
   const admin = adminClient();
 
+  // Find or create user
   const { data: profileRow } = await admin
     .from("profiles")
     .select("user_id")
     .eq("email", info.email)
     .maybeSingle();
 
-  let userId: string;
-
   if (profileRow?.user_id) {
-    userId = profileRow.user_id;
-    await admin.auth.admin.updateUserById(userId, {
+    await admin.auth.admin.updateUserById(profileRow.user_id, {
       user_metadata: {
         full_name: info.name,
         avatar_url: info.picture,
@@ -85,7 +88,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } else {
-    const { data: created, error: createErr } = await admin.auth.admin.createUser({
+    const { error: createErr } = await admin.auth.admin.createUser({
       email: info.email,
       email_confirm: true,
       user_metadata: {
@@ -94,25 +97,33 @@ export async function POST(req: NextRequest) {
         google_id: info.sub,
       },
     });
-    if (createErr || !created?.user) {
-      console.error("[google-auth] createUser error:", createErr);
-      return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
+    if (createErr) {
+      console.error("[google-callback] createUser error:", createErr);
+      return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
     }
-    userId = created.user.id;
   }
 
+  // Generate a one-time token and verify it via the server client (sets session cookies)
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email: info.email,
   });
 
   if (linkErr || !linkData?.properties?.hashed_token) {
-    console.error("[google-auth] generateLink error:", linkErr);
-    return NextResponse.json({ error: "Failed to generate session" }, { status: 500 });
+    console.error("[google-callback] generateLink error:", linkErr);
+    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
   }
 
-  return NextResponse.json({
+  const supabase = await createClient();
+  const { error: verifyErr } = await supabase.auth.verifyOtp({
     token_hash: linkData.properties.hashed_token,
-    userId,
+    type: "email",
   });
+
+  if (verifyErr) {
+    console.error("[google-callback] verifyOtp error:", verifyErr);
+    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
+  }
+
+  return NextResponse.redirect(`${appUrl}/dashboard`);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -56,69 +56,17 @@ export default function LoginPage() {
     router.refresh();
   }
 
-  const handleGoogleCredential = useCallback(async (response: { credential: string }) => {
-    setGoogleLoading(true);
-    setServerError("");
-    try {
-      // Verify token server-side and create/find user in Supabase
-      const res = await fetch("/api/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credential: response.credential }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Google sign-in failed");
-
-      // Exchange the magic-link token for a real Supabase session
-      const supabase = createClient();
-      const { error } = await supabase.auth.verifyOtp({
-        token_hash: data.token_hash,
-        type: "email",
-      });
-      if (error) throw new Error(error.message);
-
-      router.push("/dashboard");
-      router.refresh();
-    } catch (err) {
-      setServerError(err instanceof Error ? err.message : "Google sign-in failed");
-      setGoogleLoading(false);
-    }
-  }, [router]);
-
-  useEffect(() => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId || clientId === "your_google_client_id") return;
-
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).google?.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleGoogleCredential,
-        auto_select: false,
-      });
-    };
-    document.head.appendChild(script);
-    return () => { document.head.removeChild(script); };
-  }, [handleGoogleCredential]);
-
   function handleGoogleLogin() {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId || clientId === "your_google_client_id") {
-      setServerError("Google sign-in is not configured yet.");
-      return;
-    }
     setGoogleLoading(true);
-    setServerError("");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).google?.accounts.id.prompt((notification: any) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        setGoogleLoading(false);
-      }
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
+    const params = new URLSearchParams({
+      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "",
+      redirect_uri: `${appUrl}/auth/google/callback`,
+      response_type: "code",
+      scope: "openid email profile",
+      prompt: "select_account",
     });
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
   }
 
   return (
