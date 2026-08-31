@@ -12,20 +12,20 @@ export default function AppleIcon() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#FFFFFF",
-        borderRadius: "40px",
+        background: "#6115FF",
+        borderRadius: "44px",
       }}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="130"
-        height="130"
+        width="120"
+        height="120"
         viewBox="0 0 32 32"
         fill="none"
       >
         <path
           d="M 5 8 A 4 4 0 0 1 9 4 L 23 4 A 4 4 0 0 1 27 8 A 4 4 0 0 0 27 16 A 4 4 0 0 0 27 24 A 4 4 0 0 1 23 28 L 9 28 A 4 4 0 0 1 5 24 A 4 4 0 0 0 5 16 A 4 4 0 0 0 5 8 Z"
-          stroke="#7C3AED"
+          stroke="#FFFFFF"
           strokeWidth="3.2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -36,7 +36,7 @@ export default function AppleIcon() {
           y1="9"
           x2="16"
           y2="23"
-          stroke="#7C3AED"
+          stroke="#FFFFFF"
           strokeWidth="3.2"
           strokeDasharray="2.5 3.5"
           strokeLinecap="round"
@@ -46,4 +46,5 @@ export default function AppleIcon() {
     { ...size }
   );
 }
+
 
