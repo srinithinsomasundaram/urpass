@@ -54,6 +54,14 @@ export const metadata: Metadata = {
     description:
       "Create digital event passes, manage attendees, and scan QR codes at entry — all in one platform.",
   },
+  icons: {
+    icon: [
+      { url: "/favicon.gif", type: "image/gif" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    apple: "/apple-icon.png",
+  },
   alternates: { canonical: BASE_URL },
   other: {
     "geo.region": "IN",
@@ -108,6 +116,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} h-full`}>
       <head>
+        <link rel="icon" type="image/gif" href="/favicon.gif" />
+        <link rel="shortcut icon" type="image/gif" href="/favicon.gif" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}

@@ -7,30 +7,43 @@ export default function AppleIcon() {
   return new ImageResponse(
     <div
       style={{
-        background: "linear-gradient(135deg, #6D28D9, #4c1d95)",
         width: "100%",
         height: "100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: "38px",
+        background: "#FFFFFF",
+        borderRadius: "40px",
       }}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="110"
-        height="110"
-        viewBox="0 0 24 24"
+        width="130"
+        height="130"
+        viewBox="0 0 32 32"
         fill="none"
-        stroke="white"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
       >
-        <path d="M2 9a3 3 0 0 1 0-6h20a3 3 0 0 1 0 6v1a3 3 0 0 1 0 6v1a3 3 0 0 1 0 6H2a3 3 0 0 1 0-6v-1a3 3 0 0 1 0-6V9z" />
-        <line x1="9" y1="12" x2="15" y2="12" />
+        <path
+          d="M 5 8 A 4 4 0 0 1 9 4 L 23 4 A 4 4 0 0 1 27 8 A 4 4 0 0 0 27 16 A 4 4 0 0 0 27 24 A 4 4 0 0 1 23 28 L 9 28 A 4 4 0 0 1 5 24 A 4 4 0 0 0 5 16 A 4 4 0 0 0 5 8 Z"
+          stroke="#7C3AED"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+        <line
+          x1="16"
+          y1="9"
+          x2="16"
+          y2="23"
+          stroke="#7C3AED"
+          strokeWidth="3.2"
+          strokeDasharray="2.5 3.5"
+          strokeLinecap="round"
+        />
       </svg>
     </div>,
     { ...size }
   );
 }
+
