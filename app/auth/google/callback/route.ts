@@ -22,113 +22,113 @@ function adminClient() {
 }
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const code = searchParams.get("code");
-  const error = searchParams.get("error");
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://urpass.space";
 
-  // Derive origin the same way the redirect route does, so redirect_uri matches
-  const proto = req.headers.get("x-forwarded-proto") ?? "https";
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
-  const origin = process.env.NEXT_PUBLIC_APP_URL ?? `${proto}://${host}`;
-  const appUrl = origin;
+  try {
+    const { searchParams } = new URL(req.url);
+    const code = searchParams.get("code");
+    const error = searchParams.get("error");
 
-  if (error || !code) {
-    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
-  }
-
-  // Exchange authorization code for Google tokens
-  // redirect_uri must exactly match what the redirect route sent to Google
-  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      code,
-      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri: `${origin}/auth/google/callback`,
-      grant_type: "authorization_code",
-    }),
-  });
-
-  const tokens = await tokenRes.json();
-  if (!tokenRes.ok || !tokens.id_token) {
-    console.error("[google-callback] token exchange error:", tokens);
-    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
-  }
-
-  // Verify the ID token
-  const infoRes = await fetch(
-    `https://oauth2.googleapis.com/tokeninfo?id_token=${tokens.id_token}`
-  );
-  if (!infoRes.ok) {
-    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
-  }
-
-  const info: GoogleTokenInfo = await infoRes.json();
-
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  if (clientId && info.aud !== clientId) {
-    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
-  }
-
-  if (info.email_verified !== "true") {
-    return NextResponse.redirect(`${appUrl}/login?error=google_email_unverified`);
-  }
-
-  const admin = adminClient();
-
-  // Find or create user
-  const { data: profileRow } = await admin
-    .from("profiles")
-    .select("user_id")
-    .eq("email", info.email)
-    .maybeSingle();
-
-  if (profileRow?.user_id) {
-    await admin.auth.admin.updateUserById(profileRow.user_id, {
-      user_metadata: {
-        full_name: info.name,
-        avatar_url: info.picture,
-        google_id: info.sub,
-      },
-    });
-  } else {
-    const { error: createErr } = await admin.auth.admin.createUser({
-      email: info.email,
-      email_confirm: true,
-      user_metadata: {
-        full_name: info.name,
-        avatar_url: info.picture,
-        google_id: info.sub,
-      },
-    });
-    if (createErr) {
-      console.error("[google-callback] createUser error:", createErr);
-      return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
+    if (error || !code) {
+      return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed&step=init`);
     }
+
+    // Exchange authorization code for Google tokens
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        redirect_uri: `${appUrl}/auth/google/callback`,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    const tokens = await tokenRes.json();
+    if (!tokenRes.ok || !tokens.id_token) {
+      console.error("[google-callback] token exchange error:", tokens);
+      return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed&step=token`);
+    }
+
+    // Verify the ID token
+    const infoRes = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${tokens.id_token}`
+    );
+    if (!infoRes.ok) {
+      return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed&step=verify`);
+    }
+
+    const info: GoogleTokenInfo = await infoRes.json();
+
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (clientId && info.aud !== clientId) {
+      return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed&step=aud`);
+    }
+
+    if (info.email_verified !== "true") {
+      return NextResponse.redirect(`${appUrl}/login?error=google_email_unverified`);
+    }
+
+    const admin = adminClient();
+
+    // Find or create user
+    const { data: profileRow } = await admin
+      .from("profiles")
+      .select("user_id")
+      .eq("email", info.email)
+      .maybeSingle();
+
+    if (profileRow?.user_id) {
+      await admin.auth.admin.updateUserById(profileRow.user_id, {
+        user_metadata: {
+          full_name: info.name,
+          avatar_url: info.picture,
+          google_id: info.sub,
+        },
+      });
+    } else {
+      const { error: createErr } = await admin.auth.admin.createUser({
+        email: info.email,
+        email_confirm: true,
+        user_metadata: {
+          full_name: info.name,
+          avatar_url: info.picture,
+          google_id: info.sub,
+        },
+      });
+      if (createErr) {
+        console.error("[google-callback] createUser error:", createErr);
+        return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed&step=create`);
+      }
+    }
+
+    // Generate a one-time token and verify it via the server client (sets session cookies)
+    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email: info.email,
+    });
+
+    if (linkErr || !linkData?.properties?.hashed_token) {
+      console.error("[google-callback] generateLink error:", linkErr);
+      return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed&step=link`);
+    }
+
+    const supabase = await createClient();
+    const { error: verifyErr } = await supabase.auth.verifyOtp({
+      token_hash: linkData.properties.hashed_token,
+      type: "email",
+    });
+
+    if (verifyErr) {
+      console.error("[google-callback] verifyOtp error:", verifyErr);
+      return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed&step=otp`);
+    }
+
+    return NextResponse.redirect(`${appUrl}/dashboard`);
+  } catch (err) {
+    console.error("[google-callback] unhandled error:", err);
+    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed&step=crash`);
   }
-
-  // Generate a one-time token and verify it via the server client (sets session cookies)
-  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-    type: "magiclink",
-    email: info.email,
-  });
-
-  if (linkErr || !linkData?.properties?.hashed_token) {
-    console.error("[google-callback] generateLink error:", linkErr);
-    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
-  }
-
-  const supabase = await createClient();
-  const { error: verifyErr } = await supabase.auth.verifyOtp({
-    token_hash: linkData.properties.hashed_token,
-    type: "email",
-  });
-
-  if (verifyErr) {
-    console.error("[google-callback] verifyOtp error:", verifyErr);
-    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
-  }
-
-  return NextResponse.redirect(`${appUrl}/dashboard`);
 }

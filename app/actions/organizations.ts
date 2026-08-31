@@ -18,18 +18,9 @@ function toSlug(name: string): string {
     .slice(0, 60);
 }
 
-async function generateUniqueSlug(supabase: Awaited<ReturnType<typeof createClient>>, name: string): Promise<string> {
+function generateSlugCandidate(name: string, suffix?: number): string {
   const base = toSlug(name) || "org";
-  let slug = base;
-  let i = 2;
-  while (true) {
-    const { count } = await supabase
-      .from("organizations")
-      .select("*", { count: "exact", head: true })
-      .eq("slug", slug);
-    if ((count ?? 0) === 0) return slug;
-    slug = `${base}-${i++}`;
-  }
+  return suffix ? `${base}-${suffix}` : base;
 }
 
 export async function createOrganization(data: OrgInput): Promise<ActionResult> {
@@ -45,15 +36,19 @@ export async function createOrganization(data: OrgInput): Promise<ActionResult> 
   const parsed = orgSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const slug = await generateUniqueSlug(supabase, parsed.data.name);
-
-  const { data: org, error: orgError } = await supabase
-    .from("organizations")
-    .insert({ ...parsed.data, slug, created_by: user.id })
-    .select("id, slug")
-    .single();
-
-  if (orgError) return { error: orgError.message };
+  // Retry insert with incremented suffix on slug collision (RLS makes pre-checking unreliable)
+  let org: { id: string; slug: string } | null = null;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const slug = generateSlugCandidate(parsed.data.name, attempt > 0 ? attempt + 1 : undefined);
+    const { data: inserted, error: orgError } = await supabase
+      .from("organizations")
+      .insert({ ...parsed.data, slug, created_by: user.id })
+      .select("id, slug")
+      .single();
+    if (!orgError) { org = inserted; break; }
+    if (orgError.code !== "23505") return { error: orgError.message };
+  }
+  if (!org) return { error: "Could not generate a unique slug. Try a different name." };
 
   // Creator becomes owner automatically
   const { data: profile } = await supabase
