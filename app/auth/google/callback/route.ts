@@ -26,16 +26,18 @@ export async function GET(req: NextRequest) {
   const code = searchParams.get("code");
   const error = searchParams.get("error");
 
-  // Use the actual request origin so redirect_uri matches what the browser sent
-  const origin = new URL(req.url).origin;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? origin;
+  // Derive origin the same way the redirect route does, so redirect_uri matches
+  const proto = req.headers.get("x-forwarded-proto") ?? "https";
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? `${proto}://${host}`;
+  const appUrl = origin;
 
   if (error || !code) {
     return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
   }
 
   // Exchange authorization code for Google tokens
-  // redirect_uri must exactly match what was sent in the initial auth request
+  // redirect_uri must exactly match what the redirect route sent to Google
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
