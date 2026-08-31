@@ -1,10 +1,19 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { orgSchema, type OrgInput } from "@/lib/validations/organization";
 import { getUserPlan } from "@/lib/plan";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+
+function adminClient() {
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 type ActionResult = { error: string } | undefined;
 
@@ -50,14 +59,15 @@ export async function createOrganization(data: OrgInput): Promise<ActionResult> 
   }
   if (!org) return { error: "Could not generate a unique slug. Try a different name." };
 
-  // Creator becomes owner automatically
+  // Creator becomes owner — use admin client to bypass RLS bootstrap problem
+  // (user has no role yet so org_members_admin_insert policy would block them)
   const { data: profile } = await supabase
     .from("profiles")
     .select("email")
     .eq("user_id", user.id)
     .single();
 
-  const { error: memberError } = await supabase
+  const { error: memberError } = await adminClient()
     .from("organization_members")
     .insert({
       organization_id: org.id,
