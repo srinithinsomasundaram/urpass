@@ -26,13 +26,16 @@ export async function GET(req: NextRequest) {
   const code = searchParams.get("code");
   const error = searchParams.get("error");
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
+  // Use the actual request origin so redirect_uri matches what the browser sent
+  const origin = new URL(req.url).origin;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? origin;
 
   if (error || !code) {
     return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`);
   }
 
   // Exchange authorization code for Google tokens
+  // redirect_uri must exactly match what was sent in the initial auth request
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -40,7 +43,7 @@ export async function GET(req: NextRequest) {
       code,
       client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri: `${appUrl}/auth/google/callback`,
+      redirect_uri: `${origin}/auth/google/callback`,
       grant_type: "authorization_code",
     }),
   });
