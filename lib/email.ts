@@ -260,6 +260,80 @@ export async function sendApplicationConfirmationEmail({
   });
 }
 
+const ROLE_LABEL: Record<string, string> = {
+  admin:         "Admin",
+  event_manager: "Event Manager",
+  checkin_staff: "Check-in Staff",
+  viewer:        "Viewer",
+};
+
+export async function sendOrgInviteEmail({
+  to,
+  inviterName,
+  orgName,
+  role,
+  inviteUrl,
+}: {
+  to: string;
+  inviterName: string;
+  orgName: string;
+  role: string;
+  inviteUrl: string;
+}) {
+  const roleLabel = ROLE_LABEL[role] ?? role;
+  await sendEmail({
+    from: FROM,
+    to,
+    subject: `You've been invited to join ${orgName} on URPASS`,
+    html: `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /></head>
+<body style="margin:0;padding:0;background:#f0effe;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f0effe;padding:40px 16px;">
+  <tr><td align="center">
+    <p style="margin:0 0 20px;font-size:11px;font-weight:700;letter-spacing:4px;color:#9333ea;text-transform:uppercase;">URPASS</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:460px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 40px rgba(109,40,217,0.12);">
+      <tr>
+        <td style="background:linear-gradient(135deg,#6D28D9 0%,#4c1d95 100%);padding:30px 32px;">
+          <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:3px;color:rgba(255,255,255,0.5);text-transform:uppercase;">Team Invitation</p>
+          <p style="margin:0;font-size:21px;font-weight:800;color:#ffffff;">You&apos;re invited!</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:28px 32px;">
+          <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.6;">
+            <strong>${inviterName}</strong> has invited you to join <strong>${orgName}</strong> on URPASS as <strong>${roleLabel}</strong>.
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf5ff;border-radius:14px;border:1px solid #ede9fe;margin-bottom:20px;">
+            <tr>
+              <td style="padding:18px 24px;">
+                <p style="margin:0 0 4px;font-size:10px;font-weight:600;letter-spacing:2px;color:#9ca3af;text-transform:uppercase;">Your role</p>
+                <p style="margin:0;font-size:15px;font-weight:700;color:#6D28D9;">${roleLabel}</p>
+              </td>
+            </tr>
+          </table>
+          <a href="${inviteUrl}" style="display:block;background:#6D28D9;color:#ffffff;text-align:center;padding:15px 24px;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;">
+            Accept Invitation &rarr;
+          </a>
+          <p style="margin:14px 0 0;font-size:11px;color:#9ca3af;text-align:center;">
+            This invite expires in 7 days. If you didn&apos;t expect this, you can safely ignore it.
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td style="border-top:1px solid #f3f4f6;padding:16px 32px;background:#fafafa;border-radius:0 0 24px 24px;text-align:center;">
+          <p style="margin:0;font-size:11px;color:#d1d5db;">Powered by URPASS &middot; <a href="${APP_URL}" style="color:#a78bfa;text-decoration:none;">urpass.space</a></p>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>`.trim(),
+  });
+}
+
 export async function sendApprovalEmail({
   to,
   attendeeName,

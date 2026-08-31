@@ -17,6 +17,7 @@ import {
   Palette,
   Zap,
   ChevronRight,
+  Building2,
 } from "lucide-react";
 
 const mainNav = [
@@ -135,6 +136,14 @@ export default function Sidebar({ email, fullName, planSlug }: Props) {
             <NavLink key={href} href={href} icon={icon} label={label} exact={exact} active={isActive(href, exact)} />
           ))}
         </nav>
+
+        {/* ── Organizations (Starter+) ──────────────────────────── */}
+        {planSlug && planSlug !== "free" && (
+          <nav className="flex flex-col gap-0.5">
+            <SectionLabel>Teams</SectionLabel>
+            <NavLink href="/dashboard/organizations" icon={Building2} label="Organizations" active={isActive("/dashboard/organizations") || isActive("/org")} />
+          </nav>
+        )}
 
         {/* ── Tools nav ─────────────────────────────────────────── */}
         {planSlug && planSlug !== "free" && (

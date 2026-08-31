@@ -9,7 +9,7 @@ import { getUserPlan } from "@/lib/plan";
 
 type ActionResult = { error: string } | undefined;
 
-export async function createEvent(data: EventInput): Promise<ActionResult> {
+export async function createEvent(data: EventInput, organizationId?: string): Promise<ActionResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -56,6 +56,7 @@ export async function createEvent(data: EventInput): Promise<ActionResult> {
     ticket_price: parsed.data.is_paid_event ? parsed.data.ticket_price : 0,
     organizer_id: user.id,
     apply_slug,
+    ...(organizationId ? { organization_id: organizationId } : {}),
   };
 
   const { data: event, error } = await supabase

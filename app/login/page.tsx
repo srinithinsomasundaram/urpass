@@ -57,10 +57,15 @@ export default function LoginPage() {
   }
 
   function handleGoogleLogin() {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      setServerError("Google sign-in is not configured. Please use email/password or contact support.");
+      return;
+    }
     setGoogleLoading(true);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
     const params = new URLSearchParams({
-      client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "",
+      client_id: clientId,
       redirect_uri: `${appUrl}/auth/google/callback`,
       response_type: "code",
       scope: "openid email profile",

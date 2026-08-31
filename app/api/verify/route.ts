@@ -20,15 +20,32 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing passToken or eventId" }, { status: 400 });
   }
 
-  // Verify organizer owns this event
+  // Verify user has access to check in at this event
   const { data: event } = await supabase
     .from("events")
-    .select("id, name")
+    .select("id, name, organizer_id, organization_id")
     .eq("id", eventId)
-    .eq("organizer_id", user.id)
     .single();
 
   if (!event) {
+    return NextResponse.json({ error: "Event not found or unauthorized" }, { status: 403 });
+  }
+
+  const isOrganizer = event.organizer_id === user.id;
+  let hasOrgAccess = false;
+  if (!isOrganizer && event.organization_id) {
+    const { data: member } = await supabase
+      .from("organization_members")
+      .select("role")
+      .eq("organization_id", event.organization_id)
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .in("role", ["owner", "admin", "event_manager", "checkin_staff"])
+      .single();
+    hasOrgAccess = !!member;
+  }
+
+  if (!isOrganizer && !hasOrgAccess) {
     return NextResponse.json({ error: "Event not found or unauthorized" }, { status: 403 });
   }
 

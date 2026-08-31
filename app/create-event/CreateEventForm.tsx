@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Loader2, Lock, IndianRupee } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, IndianRupee, Building2 } from "lucide-react";
 import { eventSchema, type EventInput } from "@/lib/validations/event";
 import { createEvent } from "@/app/actions/events";
 
@@ -14,6 +14,8 @@ interface Props {
   maxEvents: number;
   unlimited: boolean;
   canCreatePaidEvents: boolean;
+  organizationId?: string;
+  organizationName?: string;
 }
 
 function Field({
@@ -40,7 +42,7 @@ function Field({
 const inputCls =
   "border border-neutral-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-neutral-900 transition-colors bg-white placeholder:text-neutral-300";
 
-export default function CreateEventForm({ maxAttendees, activeEventCount, maxEvents, unlimited, canCreatePaidEvents }: Props) {
+export default function CreateEventForm({ maxAttendees, activeEventCount, maxEvents, unlimited, canCreatePaidEvents, organizationId, organizationName }: Props) {
   const [serverError, setServerError] = useState("");
 
   const atLimit = !unlimited && activeEventCount >= maxEvents;
@@ -69,7 +71,7 @@ export default function CreateEventForm({ maxAttendees, activeEventCount, maxEve
 
   async function onSubmit(data: EventInput) {
     setServerError("");
-    const result = await createEvent(data);
+    const result = await createEvent(data, organizationId);
     if (result?.error) setServerError(result.error);
   }
 
@@ -97,6 +99,16 @@ export default function CreateEventForm({ maxAttendees, activeEventCount, maxEve
             {activeEventCount} / {unlimited ? "∞" : maxEvents} events
           </div>
         </div>
+
+        {/* Org context banner */}
+        {organizationName && (
+          <div className="flex items-center gap-3 bg-brand-50 border border-brand-100 rounded-xl px-4 py-3 mb-2">
+            <Building2 className="w-4 h-4 text-brand shrink-0" />
+            <p className="text-sm text-brand font-medium">
+              Creating under <strong>{organizationName}</strong>
+            </p>
+          </div>
+        )}
 
         {/* Limit banner */}
         {atLimit && (

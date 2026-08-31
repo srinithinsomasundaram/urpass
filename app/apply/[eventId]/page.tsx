@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { CalendarDays, Ticket } from "lucide-react";
+import { CalendarDays, Ticket, ScanLine } from "lucide-react";
 import ApplyForm from "./ApplyForm";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +63,7 @@ export default async function ApplyPage({
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, name, description, event_date, start_time, venue, auto_approve, is_paid_event, ticket_price, organizer_id")
+    .select("id, name, description, event_date, start_time, venue, auto_approve, is_paid_event, ticket_price, organizer_id, organization_id")
     .eq("apply_slug", slug)
     .eq("status", "active")
     .eq("application_enabled", true)
@@ -121,5 +122,46 @@ export default async function ApplyPage({
     orgLogoUrl: (isPro && orgProfile?.org_logo_url) ? orgProfile.org_logo_url : null,
   };
 
-  return <ApplyForm event={event as EventInfo} branding={branding} />;
+  // Check if current user is logged-in staff for this event
+  let staffScanLink: string | null = null;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const isOrganizer = event.organizer_id === user.id;
+    if (isOrganizer) {
+      staffScanLink = `/scan/${event.id}`;
+    } else if (event.organization_id) {
+      // Check if user is an active org member with check-in access for this event's org
+      const { data: member } = await supabase
+        .from("organization_members")
+        .select("role")
+        .eq("organization_id", event.organization_id)
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .in("role", ["owner", "admin", "event_manager", "checkin_staff"])
+        .maybeSingle();
+      if (member) staffScanLink = `/scan/${event.id}`;
+    }
+  }
+
+  return (
+    <>
+      {staffScanLink && (
+        <div className="fixed top-0 inset-x-0 z-50 flex items-center justify-between gap-3 px-4 py-2.5 text-white text-sm font-semibold"
+          style={{ background: "linear-gradient(135deg, #6D28D9 0%, #4c1d95 100%)" }}>
+          <div className="flex items-center gap-2">
+            <ScanLine className="w-4 h-4 text-white/70" />
+            <span>Staff view</span>
+          </div>
+          <Link
+            href={staffScanLink}
+            className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 transition-colors px-3 py-1.5 rounded-lg text-xs font-bold"
+          >
+            <ScanLine className="w-3.5 h-3.5" />
+            Open scanner
+          </Link>
+        </div>
+      )}
+      <ApplyForm event={event as EventInfo} branding={branding} staffScanLink={staffScanLink} />
+    </>
+  );
 }

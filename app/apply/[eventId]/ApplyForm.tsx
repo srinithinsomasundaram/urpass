@@ -88,7 +88,7 @@ function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
-export default function ApplyForm({ event, branding }: { event: EventInfo; branding: Branding }) {
+export default function ApplyForm({ event, branding, staffScanLink }: { event: EventInfo; branding: Branding; staffScanLink?: string | null }) {
   const [success, setSuccess] = useState<SuccessState | null>(null);
   const [serverError, setServerError] = useState("");
   const [paymentPending, setPaymentPending] = useState(false);
@@ -362,7 +362,7 @@ export default function ApplyForm({ event, branding }: { event: EventInfo; brand
   // ── Application form ──────────────────────────────────────────────────────
   return (
     <div
-      className="min-h-screen flex flex-col items-center p-5 pt-10 pb-16"
+      className={`min-h-screen flex flex-col items-center p-5 pb-16 ${staffScanLink ? "pt-20" : "pt-10"}`}
       style={{ background: BG }}
     >
       <div className="w-full max-w-[480px]">

@@ -8,6 +8,7 @@ export interface PlanLimits {
   canRemoveBranding: boolean;
   canUseAPI: boolean;
   canCreatePaidEvents: boolean;
+  canCreateOrganizations: boolean;
 }
 
 const FREE_LIMITS: PlanLimits = {
@@ -20,6 +21,7 @@ const FREE_LIMITS: PlanLimits = {
   canRemoveBranding: false,
   canUseAPI: false,
   canCreatePaidEvents: false,
+  canCreateOrganizations: false,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -51,5 +53,6 @@ export async function getUserPlan(supabase: any, userId: string): Promise<PlanLi
     canRemoveBranding: plan.slug !== "free",
     canUseAPI: plan.slug === "pro" || plan.slug === "enterprise",
     canCreatePaidEvents: plan.slug !== "free",
+    canCreateOrganizations: plan.slug !== "free",
   };
 }

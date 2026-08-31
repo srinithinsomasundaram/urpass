@@ -61,6 +61,7 @@ export type Event = {
   application_enabled: boolean;
   is_paid_event: boolean;
   ticket_price: number;
+  organization_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -133,6 +134,45 @@ export type CheckIn = {
   attendee_id: string;
   checked_in_at: string;
   checked_in_by: string;
+  created_at: string;
+};
+
+export type OrgRole = "owner" | "admin" | "event_manager" | "checkin_staff" | "viewer";
+export type MemberStatus = "active" | "pending";
+
+export type Organization = {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  website: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  brand_color: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OrganizationMember = {
+  id: string;
+  organization_id: string;
+  user_id: string | null;
+  invited_email: string;
+  role: OrgRole;
+  status: MemberStatus;
+  invite_token: string | null;
+  invited_by: string | null;
+  joined_at: string | null;
+  created_at: string;
+  updated_at: string;
+  profile?: { full_name: string; avatar_url: string | null };
+};
+
+export type EventAssignment = {
+  id: string;
+  event_id: string;
+  member_id: string;
   created_at: string;
 };
 

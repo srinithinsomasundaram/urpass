@@ -25,12 +25,39 @@ export default async function ScanIndexPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: events } = await supabase
+  // Personal events
+  const { data: personalEvents } = await supabase
     .from("events")
     .select("id, name, event_date, venue, status")
     .eq("organizer_id", user.id)
     .eq("status", "active")
     .order("event_date", { ascending: true });
+
+  // Org events: user must be active member with check-in access
+  const { data: memberships } = await supabase
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .in("role", ["owner", "admin", "event_manager", "checkin_staff"]);
+
+  const orgIds = (memberships ?? []).map((m) => m.organization_id);
+  const { data: orgEvents } = orgIds.length > 0
+    ? await supabase
+        .from("events")
+        .select("id, name, event_date, venue, status")
+        .in("organization_id", orgIds)
+        .eq("status", "active")
+        .order("event_date", { ascending: true })
+    : { data: [] };
+
+  // Merge and deduplicate
+  const seen = new Set<string>();
+  const events = [...(personalEvents ?? []), ...(orgEvents ?? [])].filter((e) => {
+    if (seen.has(e.id)) return false;
+    seen.add(e.id);
+    return true;
+  }).sort((a, b) => a.event_date.localeCompare(b.event_date));
 
   return (
     <div className="min-h-screen bg-neutral-950 page-in">
